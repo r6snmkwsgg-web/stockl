@@ -19,7 +19,8 @@ stock against the others on the same day (percentile ranks, 0 = worst,
                                                average (not a collapsing stock).
 
 Red flags are shown on the site but do not change the score. Some conditions
-make a stock ineligible altogether (losing money, stale data, too illiquid).
+make a stock ineligible altogether (losing money, stale data, too illiquid,
+less than three years of price history).
 
 Why these weights: the first version (35/40/25 with flag penalties) was tested
 point-in-time on 2012-2025 and its top picks did WORSE than the average stock.
@@ -145,7 +146,8 @@ def score_day(rows: pd.DataFrame) -> pd.DataFrame:
     ok = ((r["net_income_ttm"] > 0) & (r["revenue_ttm"] > 0) & r["mcap"].notna()
           & (r["price_real"] > MIN_PRICE) & (r["avgvol_real"] > MIN_AVG_VOLUME)
           & (r["days_since_filing"] <= STALE_DAYS)
-          & (fin | (r["fcf_ttm"] > 0)))
+          & (fin | (r["fcf_ttm"] > 0))
+          & r["ret3y_vs_spy"].notna())                     # needs a three-year record to be judged on
     r["eligible"] = ok.fillna(False)
 
     # --- quality

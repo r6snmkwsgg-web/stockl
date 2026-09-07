@@ -187,8 +187,8 @@ def main():
                 reason = "losing money"
             elif not r["financial"] and r["fcf_ttm"] <= 0:
                 reason = "negative free cash flow"
-            elif pd.isna(r["score"]):
-                reason = "not enough price history"
+            elif pd.isna(r["ret3y_vs_spy"]) or pd.isna(r["score"]):
+                reason = "less than 3 years of price history"
             else:
                 reason = "missing data"
         stocks.append({
