@@ -9,7 +9,9 @@ important, the reasons the results are probably better than what you would get
 in real life. **Then read `RESEARCH.md`**, which tests 13 changes to the rules
 (including "hold a few days, take 20%") to see whether anything beats SPY.
 `RESEARCH_DIPS.md` then tests the idea of buying structurally strong stocks
-after a big dip, against a control group of fallen stocks.
+after a big dip, against a control group of fallen stocks. `RESEARCH_SCORE.md`
+describes the fundamentals-based score behind the **Bargain Ledger** web page
+(`site/index.html`) and how well it did in a point-in-time backtest.
 
 ## What is in here
 
@@ -25,6 +27,13 @@ after a big dip, against a control group of fallen stocks.
 | `swing/control_universe.py` | The control group: 95 once-large or once-popular stocks that later lagged or crashed. |
 | `RESEARCH_DIPS.md` | Write-up of the dip research. |
 | `data/control/` | Prices for the control group. |
+| `swing/fundamentals.py` | Downloads and parses SEC EDGAR financial statements (free, no key), point-in-time by filing date. |
+| `swing/score.py` | The quality / value / timing score behind the web page. |
+| `backtest_score.py` | Point-in-time test of the score: quarterly top-10 picks 2012-2025 vs SPY. Writes `results/score_backtest.md`. |
+| `build_site.py` + `site_template.html` | Builds `site/index.html`, the Bargain Ledger page. |
+| `site/index.html` | The page itself: ranked stocks, why each scores as it does, and the record. Open it in a browser. |
+| `data/fundamentals/` | Compact SEC filing data for every company. |
+| `RESEARCH_SCORE.md` | Write-up of the score and its backtest. |
 | `swing/universe.py` | The list of 100 stocks. |
 | `swing/data.py` | Download / load code (stooq with Yahoo fallback). |
 | `swing/indicators.py` | Moving averages, RSI, ATR, 52-week high/low, pullback detection. |
@@ -51,6 +60,10 @@ python research_variants.py
 # extra: the dip study (needs data/control, included in the repo)
 python research_dips.py
 python scan_dips.py --no-download        # today's strong-stock-in-a-dip list
+
+# the Bargain Ledger page: refresh prices + SEC filings, score, and rebuild site/index.html
+python build_site.py --download
+python backtest_score.py                 # optional: re-run the point-in-time test of the score
 
 # 5. any day after the close: what matches the setup today?
 python scan_today.py                       # $3,000 account, 2% risk (defaults)

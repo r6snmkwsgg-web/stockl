@@ -1,0 +1,484 @@
+<title>Bargain Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EDF1EA; --paper:#F7F9F5; --paper-2:#E4EAE0; --rule:#C9D3C4; --rule-strong:#9FAE9A;
+  --ink:#172420; --ink-2:#4E5F57; --ink-3:#77867E;
+  --accent:#4655B5; --accent-ink:#FFFFFF; --accent-soft:#DDE1F5; --accent-2:#A8761C;
+  --good:#2E7D4F; --good-soft:#D9EBDD; --warn:#A3690F; --warn-soft:#F3E6C8; --bad:#B23A3A; --bad-soft:#F2D9D9;
+  --display:"Newsreader",Georgia,"Times New Roman",serif;
+  --body:"Libre Franklin","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --radius:3px; --measure:66ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1613; --paper:#172019; --paper-2:#1F2A23; --rule:#2B3830; --rule-strong:#46554C;
+    --ink:#E4EBE5; --ink-2:#A7B5AC; --ink-3:#7E8C84;
+    --accent:#6E7EE0; --accent-ink:#0F1613; --accent-soft:#2A3260; --accent-2:#B98C33;
+    --good:#5FB97F; --good-soft:#1E3A2A; --warn:#D9A24A; --warn-soft:#3E2F12; --bad:#E06666; --bad-soft:#452020;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1613; --paper:#172019; --paper-2:#1F2A23; --rule:#2B3830; --rule-strong:#46554C;
+  --ink:#E4EBE5; --ink-2:#A7B5AC; --ink-3:#7E8C84;
+  --accent:#6E7EE0; --accent-ink:#0F1613; --accent-soft:#2A3260; --accent-2:#B98C33;
+  --good:#5FB97F; --good-soft:#1E3A2A; --warn:#D9A24A; --warn-soft:#3E2F12; --bad:#E06666; --bad-soft:#452020;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+h1,h2,h3{font-family:var(--display);font-weight:500;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-0.005em}
+h1{font-size:clamp(40px,6vw,64px);font-optical-sizing:auto}
+h2{font-size:30px}
+h3{font-size:20px}
+p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);font-weight:500}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ruled{background-image:repeating-linear-gradient(to bottom,transparent 0 27px,color-mix(in oklab,var(--rule) 60%,transparent) 27px 28px)}
+
+/* masthead */
+.masthead{padding:40px 32px 0;border-bottom:3px double var(--rule-strong)}
+.masthead-inner{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px 48px;align-items:end;padding-bottom:28px}
+.lede{font-family:var(--display);font-size:20px;line-height:1.35;color:var(--ink-2);max-width:34em;margin-top:14px}
+.facts{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;border-top:1px solid var(--rule);}
+.facts div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--rule);padding:9px 0;align-items:baseline}
+.facts dt{color:var(--ink-2);font-size:13px}
+.facts dd{margin:0;font-family:var(--mono);font-size:14px;text-align:right}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-family:var(--mono);line-height:1.6}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+
+/* workspace */
+main{max-width:1440px;margin:0 auto;padding:0 32px 64px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:20px 0 14px;border-bottom:1px solid var(--rule)}
+.controls label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.controls input[type=search],.controls select,.controls input[type=number]{background:var(--paper);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:6px 9px;font-size:13px;color:var(--ink)}
+.controls input[type=search]{width:190px}
+.controls .count{margin-left:auto;font-size:13px;color:var(--ink-2)}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start;padding-top:18px}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;text-align:left;padding:8px 7px;border-bottom:1px solid var(--rule-strong);white-space:nowrap;cursor:pointer;user-select:none;vertical-align:bottom}
+thead th.r,td.r{text-align:right}
+thead th[aria-sort]{color:var(--ink)}
+thead th[aria-sort="descending"]::after{content:" ▾"} thead th[aria-sort="ascending"]::after{content:" ▴"}
+tbody tr{border-bottom:1px solid var(--rule);cursor:pointer}
+tbody tr:hover{background:var(--paper-2)}
+tbody tr[aria-selected="true"]{background:var(--paper);box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr.off{color:var(--ink-3)}
+td{padding:6px 7px;vertical-align:middle;white-space:nowrap}
+td.company{white-space:normal;min-width:180px}
+td.company .t{font-family:var(--mono);font-weight:500;font-size:13.5px}
+td.company .n{display:block;font-size:12px;color:var(--ink-2);line-height:1.25}
+tr.off td.company .n{color:var(--ink-3)}
+.score{display:inline-block;min-width:44px;text-align:center;font-family:var(--mono);font-weight:500;padding:2px 6px;border-radius:var(--radius);border:1px solid transparent}
+.score.strong{background:var(--accent);color:var(--accent-ink)}
+.score.fair{background:var(--accent-soft);color:var(--ink)}
+.score.weak{border-color:var(--rule-strong);color:var(--ink-2)}
+.meter{display:inline-grid;grid-template-columns:repeat(3,26px);gap:3px;vertical-align:middle}
+.meter i{display:block;height:8px;background:var(--rule);border-radius:2px;position:relative;overflow:hidden}
+.meter i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--accent);border-radius:2px}
+.flags{font-family:var(--mono);font-size:12px}
+.flags.some{color:var(--warn)} .flags.hard{color:var(--bad)}
+.sub{font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
+.sub2{display:block;font-size:10.5px;color:var(--ink-3);font-family:var(--mono);line-height:1.2;margin-top:1px}
+.up{color:var(--good)} .down{color:var(--bad)}
+
+/* detail */
+.detail{position:sticky;top:16px;background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--accent);padding:18px 20px 20px}
+.detail .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.detail .ticker{font-family:var(--mono);font-size:13px;color:var(--ink-2)}
+.detail h3{font-size:24px;margin-top:2px}
+.detail .big{font-family:var(--mono);font-size:34px;font-weight:500;line-height:1;text-align:right}
+.detail .big small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-family:var(--body);margin-top:6px}
+.detail .verdict{font-family:var(--display);font-size:17px;color:var(--ink-2);margin:10px 0 14px;line-height:1.3}
+.spark{width:100%;height:auto;display:block;margin:4px 0 6px}
+.spark text{font-family:var(--mono);font-size:10px;fill:var(--ink-2)}
+.why{margin:0;padding:0;list-style:none;display:grid;gap:10px;border-top:1px solid var(--rule);padding-top:12px}
+.why li{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start;font-size:13px}
+.why .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding-top:3px}
+.why .bar{height:6px;background:var(--rule);border-radius:2px;position:relative;margin:6px 0 5px;overflow:hidden}
+.why .bar::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--accent);border-radius:2px}
+.why .v{font-family:var(--mono);font-weight:500}
+.why .txt{color:var(--ink-2);line-height:1.4}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin:14px 0 0;border-top:1px solid var(--rule)}
+.kv div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);font-size:12.5px}
+.kv dt{color:var(--ink-2)} .kv dd{margin:0;font-family:var(--mono)}
+.flaglist{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.flaglist li{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.flaglist li.hard{background:var(--bad-soft);color:var(--bad)}
+.flaglist li.none{background:var(--good-soft);color:var(--good)}
+.detail .foot{font-size:12px;color:var(--ink-3);margin-top:12px;line-height:1.4}
+
+/* prose sections */
+.prose{max-width:var(--measure);margin:56px auto 0;padding-top:28px;border-top:1px solid var(--rule-strong)}
+.prose.wide{max-width:980px}
+.prose h2{margin-bottom:6px}
+.prose .eyebrow{margin-bottom:8px}
+.prose p{margin:12px 0;color:var(--ink);max-width:var(--measure)}
+.prose ul{margin:10px 0;padding-left:20px} .prose li{margin:5px 0}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:18px 0}
+.three div{border-top:2px solid var(--accent);padding-top:10px}
+.three .w{font-family:var(--mono);color:var(--ink-2);font-size:12px}
+.three h3{margin:2px 0 6px}
+.three p{font-size:13.5px;color:var(--ink-2);margin:0}
+.rec{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start;margin-top:18px}
+.stat{font-family:var(--display);font-size:26px;line-height:1.25;max-width:22em}
+.stat b{font-family:var(--mono);font-weight:500;font-size:24px;color:var(--accent)}
+table.small{font-size:13px;margin-top:14px}
+table.small th{cursor:default}
+table.small td{padding:6px 8px}
+.chart{width:100%;height:auto;display:block;margin-top:14px}
+.chart text{font-family:var(--mono);font-size:11px;fill:var(--ink-2)}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2);margin-top:10px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;background:var(--accent);border-radius:2px}
+.legend span.spy::before{background:var(--accent-2)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);font-family:var(--mono);font-size:11.5px;padding:5px 8px;border-radius:var(--radius);white-space:nowrap;display:none;z-index:2}
+.chart-wrap{position:relative}
+footer{max-width:1440px;margin:0 auto;padding:24px 32px 48px;font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule)}
+footer p{max-width:var(--measure)}
+@media (max-width:1100px){.split{grid-template-columns:1fr}.detail{position:static}.masthead-inner{grid-template-columns:1fr}}
+@media (max-width:700px){.masthead,main,footer{padding-left:18px;padding-right:18px}.three,.rec,.facts{grid-template-columns:1fr}.controls input[type=search]{width:100%}}
+@media (prefers-reduced-motion:no-preference){tbody tr{transition:background .12s}}
+</style>
+
+<header class="masthead ruled">
+  <div class="masthead-inner">
+    <div>
+      <p class="eyebrow">Strong companies · low price · sensible moment</p>
+      <h1>Bargain Ledger</h1>
+      <p class="lede">A ranked list of large US companies that are making real money, priced below their own norm, and recently marked down. Built from SEC filings and daily prices, scored in the open, and checked against fourteen years of history.</p>
+    </div>
+    <dl class="facts" id="facts"></dl>
+  </div>
+</header>
+
+<main>
+  <section class="workspace" aria-label="Ranked stocks">
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search ticker or company" aria-label="Search">
+      <label>Universe <select id="uni"><option value="all">All companies</option><option value="top100">Today's 100 largest</option><option value="fallen">Once-large, since fallen</option></select></label>
+      <label>Sector <select id="sector"><option value="all">All sectors</option></select></label>
+      <label>Min score <input type="number" id="minscore" value="0" min="0" max="100" step="5" style="width:64px"></label>
+      <label><input type="checkbox" id="showoff"> Show unscored</label>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="split">
+      <div class="table-wrap">
+        <table id="ledger">
+          <thead><tr>
+            <th class="r" data-k="rank">#</th>
+            <th data-k="ticker">Company</th>
+            <th class="r" data-k="score" aria-sort="descending">Score</th>
+            <th data-k="quality" title="Quality · Value · Timing">Q · V · T</th>
+            <th class="r" data-k="price">Price</th>
+            <th class="r" data-k="dip">From 52-wk high</th>
+            <th class="r" data-k="pe">P/E · vs own 5 yrs</th>
+            <th class="r" data-k="fcf_yield">FCF yield</th>
+            <th class="r" data-k="rev_growth">Revenue growth</th>
+            <th class="r" data-k="n_flags">Flags</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <aside class="detail" id="detail" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section class="prose" id="how">
+    <p class="eyebrow">How the score works</p>
+    <h2>Three questions, one number</h2>
+    <p>Every company is asked the same three questions and scored 0 to 100 on each against the other companies in the list. The final score is a weighted mix, minus a few points for every red flag. Nothing here predicts the future: it ranks what is known today.</p>
+    <div class="three">
+      <div><span class="w" id="w-q"></span><h3>Quality</h3><p>Is this a good business? Return on equity, how much revenue turns into free cash, revenue growth over the last year, the three-year share-price record against SPY, and whether the 200-day trend is rising.</p></div>
+      <div><span class="w" id="w-v"></span><h3>Value</h3><p>Is the price low? Price-to-earnings and price-to-sales compared with the company's <em>own</em> last five years, plus earnings yield and free-cash-flow yield compared with peers. Profit is capped at after-tax operating profit so one-off gains cannot make a stock look cheap.</p></div>
+      <div><span class="w" id="w-t"></span><h3>Timing</h3><p>Is now a sensible moment? How far the price sits below its 52-week high, whether that high was recent, and whether the price is still near its 200-day average rather than in free fall.</p></div>
+    </div>
+    <p><strong>Red flags</strong> are listed on every card but do not change the score: losing money, negative free cash flow, shrinking revenue or profit, heavy debt, very high volatility, more than 20% below the 200-day average, a P/E above 50 or in the top fifth of its own history, profit boosted by one-off gains, stale filings, thin trading. An earlier version docked points for each flag; the record showed that made the picks worse, so now they are warnings for you to read, not arithmetic.</p>
+    <p><strong>Why quality carries most of the weight.</strong> The first version of this score gave 40% to cheapness and 25% to the size of the pull-back. Tested honestly on 2012 to 2025, its top ten picks did <em>worse</em> than the average stock in the list. Only the quality questions ranked future returns, in both halves of the data; the cheap-and-dipping stocks were mostly cheap for a reason. The weights you see are what the evidence supports, and the section below shows both versions so you can judge for yourself.</p>
+    <p><strong>Not scored</strong> means a hard rule failed: no profit or no free cash flow over the last twelve months, no filing for more than 135 days, price under $10, or fewer than 500,000 shares traded a day. Banks, insurers and exchanges are judged on earnings, book value and return on equity instead of cash flow, which means nothing for a bank.</p>
+  </section>
+
+  <section class="prose wide" id="record">
+    <p class="eyebrow">How often it is right</p>
+    <h2>The record, not a promise</h2>
+    <div id="record-body"></div>
+  </section>
+
+  <section class="prose" id="limits">
+    <p class="eyebrow">What it cannot do</p>
+    <h2>Read this before acting on anything above</h2>
+    <ul>
+      <li><strong>It cannot tell a temporary dip from a permanent one.</strong> A strong three-year record plus a 25% fall described Nvidia in early 2016 and Peloton in late 2021 equally well. The filings say what a company earned; they do not say why the price fell this month. Read the news before you read the score.</li>
+      <li><strong>The list is partly hindsight.</strong> Half of it is today's largest companies, which by definition did well. The other half, companies that were once large and later fell, is there to keep the test honest, but businesses that went bankrupt are missing entirely.</li>
+      <li><strong>It chases the last cycle.</strong> Rewarding recent profitability and a strong three-year record means the list can be full of last year's winners: oil companies in January 2023, Moderna and Meta in January 2022. A quality screen is partly a momentum screen, and it does not know when a cycle has ended.</li>
+      <li><strong>Filings lag.</strong> A company's last quarter can be up to three months old. A profit collapse that happened last week is not in the numbers yet, though it usually is in the price, which is why the timing flags exist.</li>
+      <li><strong>Earnings dates are not checked.</strong> A company about to report can move 10% overnight either way. Check the date yourself.</li>
+      <li><strong>A high score is a starting point for research,</strong> not an instruction to buy. The record above shows the top picks lose to the index a large share of the time. This page is a study tool, not investment advice.</li>
+    </ul>
+  </section>
+</main>
+<footer>
+  <p id="foot"></p>
+  <p>Prices: Yahoo Finance daily history (stooq where reachable). Financial statements: SEC EDGAR company facts, used point-in-time by filing date; the derived quarterly figures were checked against each company's own filed annual totals and 98.6% agree within 1% (the rest are restatements around mergers and spin-offs). Everything is computed by the open-source scripts in the repository; re-run <code>build_site.py</code> for fresh numbers.</p>
+</footer>
+
+<script>
+const DATA = __DATA__;
+const S = DATA.stocks;
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isNum = v => typeof v === 'number' && isFinite(v);
+const fmt = {
+  pct: (v, d=0, sign=false) => !isNum(v) ? '—' : ((sign && v > 0) ? '+' : '') + v.toFixed(d) + '%',
+  num: (v, d=1) => !isNum(v) ? '—' : v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}),
+  money: v => { if (!isNum(v)) return '—'; const a = Math.abs(v); const s = v < 0 ? '−' : '';
+    if (a >= 1e12) return s + '$' + (a/1e12).toFixed(2) + 'T'; if (a >= 1e9) return s + '$' + (a/1e9).toFixed(1) + 'B';
+    if (a >= 1e6) return s + '$' + (a/1e6).toFixed(0) + 'M'; return s + '$' + a.toFixed(0); },
+  price: v => !isNum(v) ? '—' : '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}),
+  date: s => { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'}); },
+};
+const band = s => s >= 70 ? 'strong' : s >= 55 ? 'fair' : 'weak';
+const HARD = /^(losing|negative free|stale|thin)/;
+
+/* ---------- masthead facts ---------- */
+(function facts(){
+  const m = DATA.market, c = DATA.counts;
+  const mk = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+  $('#facts').innerHTML =
+    mk('Prices as of', fmt.date(DATA.as_of)) +
+    mk('Market (SPY vs 200-day)', `${fmt.num(m.spy,2)} vs ${fmt.num(m.sma200,2)} <span class="pill ${m.ok?'good':'bad'}">${m.ok?'above · uptrend':'below · caution'}</span>`) +
+    mk('Companies scanned', `${c.scanned} <span class="sub">(${c.top100} largest + ${c.fallen} fallen)</span>`) +
+    mk('Scored today', `${c.eligible} <span class="sub">(${c.scanned - c.eligible} not scored)</span>`);
+  $('#w-q').textContent = `${Math.round(DATA.weights.quality*100)}% of the score`;
+  $('#w-v').textContent = `${Math.round(DATA.weights.value*100)}% of the score`;
+  $('#w-t').textContent = `${Math.round(DATA.weights.timing*100)}% of the score`;
+  $('#foot').textContent = `Built ${fmt.date(DATA.built)} from prices through ${fmt.date(DATA.as_of)}. ` +
+    (DATA.not_scored.length ? 'Deliberately not scored: ' + DATA.not_scored.map(n => `${n.ticker} (${n.reason})`).join('; ') + '. ' : '') +
+    (DATA.missing.length ? 'No usable filings for: ' + DATA.missing.join(', ') + '.' : '');
+})();
+
+/* ---------- table ---------- */
+const state = { k:'score', dir:-1, q:'', uni:'all', sector:'all', min:0, off:false, sel:null };
+const sectors = [...new Set(S.map(s => s.sector))].sort();
+for (const s of sectors) { const o = document.createElement('option'); o.value = s; o.textContent = s; $('#sector').appendChild(o); }
+
+function visible(){
+  const q = state.q.trim().toLowerCase();
+  return S.filter(s => (state.off || s.eligible)
+    && (state.uni === 'all' || s.universe === state.uni)
+    && (state.sector === 'all' || s.sector === state.sector)
+    && (!s.eligible || (s.score ?? 0) >= state.min)
+    && (!q || s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)))
+   .sort((a, b) => {
+     if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+     const k = state.k; let x = a[k], y = b[k];
+     if (k === 'ticker') return state.dir * a.ticker.localeCompare(b.ticker);
+     if (!isNum(x) && !isNum(y)) return a.ticker.localeCompare(b.ticker);
+     if (!isNum(x)) return 1; if (!isNum(y)) return -1;
+     return state.dir * (x - y) || a.ticker.localeCompare(b.ticker);
+   });
+}
+function meter(s){ return `<span class="meter" title="Quality ${s.quality} · Value ${s.value} · Timing ${s.timing}"><i style="--w:${s.quality||0}%"></i><i style="--w:${s.value||0}%"></i><i style="--w:${s.timing||0}%"></i></span>`; }
+function renderTable(){
+  const rows = visible();
+  const tb = $('#rows'); tb.innerHTML = '';
+  for (const s of rows) {
+    const tr = document.createElement('tr');
+    tr.dataset.t = s.ticker; tr.tabIndex = 0; tr.setAttribute('role', 'button');
+    tr.setAttribute('aria-selected', s.ticker === state.sel ? 'true' : 'false');
+    if (!s.eligible) tr.className = 'off';
+    const hard = s.flags.some(f => HARD.test(f));
+    tr.innerHTML = `
+      <td class="r num">${s.eligible ? s.rank : '—'}</td>
+      <td class="company"><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} · ${esc(s.sector)}</span></td>
+      <td class="r">${s.eligible ? `<span class="score ${band(s.score)}">${s.score.toFixed(0)}</span>` : `<span class="sub">not scored</span>`}</td>
+      <td>${s.eligible ? meter(s) : `<span class="sub">${esc(s.reason||'')}</span>`}</td>
+      <td class="r num">${fmt.price(s.price)}</td>
+      <td class="r num ${isNum(s.dip) && s.dip <= -20 ? 'down' : ''}">${fmt.pct(s.dip, 0)}${s.fresh ? ' <span class="sub" title="52-week high set within the last 60 trading days">fresh</span>' : ''}</td>
+      <td class="r num">${fmt.num(s.pe, 1)}<span class="sub2">${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? `<span class="up">cheaper than ${100 - s.pe_pct_5y}% of its past</span>` : `pricier than ${s.pe_pct_5y}% of its past`) : (isNum(s.pe) ? 'no 5-yr history' : '')}</span></td>
+      <td class="r num">${s.financial ? '<span class="sub">n/a (bank)</span>' : fmt.pct(s.fcf_yield, 1)}</td>
+      <td class="r num ${isNum(s.rev_growth) ? (s.rev_growth >= 0 ? 'up' : 'down') : ''}">${fmt.pct(s.rev_growth, 0, true)}</td>
+      <td class="r"><span class="flags ${hard ? 'hard' : s.n_flags ? 'some' : ''}" title="${esc(s.flags.join(', '))}">${s.n_flags || '·'}</span></td>`;
+    tr.addEventListener('click', () => select(s.ticker));
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(s.ticker); } });
+    tb.appendChild(tr);
+  }
+  $('#count').textContent = `${rows.length} shown`;
+  if (!rows.some(r => r.ticker === state.sel) && rows.length) select(rows[0].ticker, false);
+}
+for (const th of document.querySelectorAll('#ledger thead th')) th.addEventListener('click', () => {
+  const k = th.dataset.k; const defDir = (k === 'ticker' || k === 'rank' || k === 'pe' || k === 'n_flags') ? 1 : -1;
+  if (state.k === k) state.dir = -state.dir; else { state.k = k; state.dir = defDir; }
+  for (const h of document.querySelectorAll('#ledger thead th')) h.removeAttribute('aria-sort');
+  th.setAttribute('aria-sort', state.dir < 0 ? 'descending' : 'ascending');
+  renderTable();
+});
+$('#q').addEventListener('input', e => { state.q = e.target.value; renderTable(); });
+$('#uni').addEventListener('change', e => { state.uni = e.target.value; renderTable(); });
+$('#sector').addEventListener('change', e => { state.sector = e.target.value; renderTable(); });
+$('#minscore').addEventListener('input', e => { state.min = +e.target.value || 0; renderTable(); });
+$('#showoff').addEventListener('change', e => { state.off = e.target.checked; renderTable(); });
+
+/* ---------- detail ---------- */
+function select(t, scroll=true){
+  state.sel = t;
+  for (const tr of document.querySelectorAll('#rows tr')) tr.setAttribute('aria-selected', tr.dataset.t === t ? 'true' : 'false');
+  renderDetail(S.find(s => s.ticker === t));
+}
+function sparkline(s){
+  const W = 360, H = 130, L = 8, R = 74, T = 14, B = 20;
+  const pts = s.spark.map((v, i) => [v, s.spark_sma[i], s.spark_dates[i]]).filter(p => isNum(p[0]));
+  if (pts.length < 2) return '';
+  const vals = pts.flatMap(p => [p[0], p[1]]).filter(isNum).concat(isNum(s.hi52) ? [s.hi52] : []);
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+  const x = i => L + (W - L - R) * i / (pts.length - 1), y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[0]).toFixed(1)}`).join('');
+  const area = line + `L${x(pts.length-1).toFixed(1)},${(H-B).toFixed(1)}L${x(0).toFixed(1)},${(H-B).toFixed(1)}Z`;
+  const sma = pts.map((p, i) => isNum(p[1]) ? `${i && isNum(pts[i-1][1]) ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[1]).toFixed(1)}` : '').join('');
+  const last = pts[pts.length-1]; const ex = x(pts.length-1), ey = y(last[0]);
+  const grid = [0.25, 0.5, 0.75].map(f => { const yy = (T + (H-T-B)*f).toFixed(1); return `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--rule)" stroke-width="1"/>`; }).join('');
+  const hiLine = isNum(s.hi52) ? `<line x1="${L}" x2="${W-R}" y1="${y(s.hi52).toFixed(1)}" y2="${y(s.hi52).toFixed(1)}" stroke="var(--rule-strong)" stroke-dasharray="2 3"/><text x="${W-R+6}" y="${(y(s.hi52)+3.5).toFixed(1)}">high ${fmt.num(s.hi52, s.hi52 >= 100 ? 0 : 2)}</text>` : '';
+  const dots = pts.map((p, i) => `<circle class="hp" data-i="${i}" cx="${x(i).toFixed(1)}" cy="${y(p[0]).toFixed(1)}" r="9" fill="transparent"/>`).join('');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="One-year price chart for ${esc(s.ticker)}">
+    ${grid}${hiLine}
+    <path d="${area}" fill="var(--accent)" fill-opacity="0.12"/>
+    <path d="${sma}" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="5" fill="var(--paper)"/><circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="3.5" fill="var(--accent)"/>
+    <text x="${(ex+8).toFixed(1)}" y="${(ey+3.5).toFixed(1)}" style="fill:var(--ink)">${fmt.num(last[0], last[0] >= 100 ? 0 : 2)}</text>
+    <text x="${L}" y="${H-6}">${fmt.date(pts[0][2]).replace(/, \d{4}/, '')}</text><text x="${W-R}" y="${H-6}" text-anchor="end">${fmt.date(last[2]).replace(/, \d{4}/, '')}</text>
+    <g class="hover" style="display:none"><line y1="${T}" y2="${H-B}" stroke="var(--ink-3)"/><circle r="3.5" fill="var(--ink)"/><text class="lbl" y="${T-3}" style="fill:var(--ink)"></text></g>
+    ${dots}</svg>`;
+}
+function renderDetail(s){
+  if (!s) return;
+  const kv = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+  const dir = (v, d=0, sign=true) => `<span class="${isNum(v) ? (v >= 0 ? 'up' : 'down') : ''}">${fmt.pct(v, d, sign)}</span>`;
+  const flags = s.flags.length ? s.flags.map(f => `<li class="${HARD.test(f) ? 'hard' : ''}">${esc(f)}</li>`).join('') : '<li class="none">no red flags</li>';
+  $('#detail').innerHTML = `
+    <div class="head">
+      <div><div class="ticker">${esc(s.ticker)} · ${esc(s.sector)} · ${s.universe === 'top100' ? 'among today\'s 100 largest' : 'once large, since fallen'}</div><h3>${esc(s.name)}</h3></div>
+      <div class="big">${s.eligible ? s.score.toFixed(0) : '—'}<small>${s.eligible ? `score · #${s.rank} of ${DATA.counts.eligible}` : 'not scored'}</small></div>
+    </div>
+    <p class="verdict">${esc(s.eligible ? s.verdict : 'Not scored: ' + (s.reason || 'missing data') + '.')}</p>
+    ${sparkline(s)}
+    <div class="legend"><span>Price, last 52 weeks</span><span style="--c:var(--ink-3)"><i></i>Dashed: 200-day average</span></div>
+    <ul class="why">
+      <li><span class="k">Quality</span><div><div class="v">${isNum(s.quality) ? s.quality : '—'} <span class="sub">/ 100</span></div><div class="bar" style="--w:${s.quality||0}%"></div><div class="txt">${esc(s.why.quality)}</div></div></li>
+      <li><span class="k">Value</span><div><div class="v">${isNum(s.value) ? s.value : '—'} <span class="sub">/ 100</span></div><div class="bar" style="--w:${s.value||0}%"></div><div class="txt">${esc(s.why.value)}</div></div></li>
+      <li><span class="k">Timing</span><div><div class="v">${isNum(s.timing) ? s.timing : '—'} <span class="sub">/ 100</span></div><div class="bar" style="--w:${s.timing||0}%"></div><div class="txt">${esc(s.why.timing)}</div></div></li>
+    </ul>
+    <dl class="kv">
+      ${kv('Price', fmt.price(s.price))}${kv('Market value', fmt.money(s.mcap))}
+      ${kv('52-wk high / low', `${fmt.num(s.hi52, 0)} / ${fmt.num(s.lo52, 0)}`)}${kv('1-year return', dir(s.ret1y))}
+      ${kv('Revenue, 12 mo', fmt.money(s.revenue_ttm))}${kv('Revenue growth', dir(s.rev_growth, 1))}
+      ${kv('Net income, 12 mo', fmt.money(s.net_income_ttm))}${kv('Profit growth', dir(s.ni_growth))}
+      ${kv('Free cash flow, 12 mo', s.financial ? 'n/a (bank)' : fmt.money(s.fcf_ttm))}${kv('FCF yield', s.financial ? 'n/a' : fmt.pct(s.fcf_yield, 1))}
+      ${kv('P/E (core / reported)', `${fmt.num(s.pe, 1)} / ${fmt.num(s.pe_reported, 1)}`)}${kv(s.financial ? 'Price / book' : 'Price / sales', fmt.num(s.financial ? s.pb : s.ps, 2))}
+      ${kv('Return on equity', fmt.pct(s.roe))}${kv('Debt / equity', fmt.num(s.debt_to_equity, 2))}
+      ${kv('Volatility (yearly)', fmt.pct(s.vol60))}${kv('Last filing', isNum(s.days_since_filing) ? `${s.days_since_filing} trading days ago` : '—')}
+    </dl>
+    <ul class="flaglist">${flags}</ul>
+    <p class="foot">Percentages "cheaper than X% of its own history" compare today's ratio with every trading day of the last five years. Core P/E caps profit at after-tax operating profit; reported P/E uses net income as filed.</p>`;
+  // hover on the sparkline
+  const svg = $('#detail svg'); if (!svg) return;
+  const hov = svg.querySelector('.hover'), pts = s.spark_dates;
+  svg.addEventListener('pointermove', e => {
+    const dot = e.target.closest('.hp'); if (!dot) return;
+    const i = +dot.dataset.i, cx = dot.getAttribute('cx'), cy = dot.getAttribute('cy');
+    hov.style.display = ''; hov.querySelector('line').setAttribute('x1', cx); hov.querySelector('line').setAttribute('x2', cx);
+    hov.querySelector('circle').setAttribute('cx', cx); hov.querySelector('circle').setAttribute('cy', cy);
+    const t = hov.querySelector('.lbl'); t.textContent = `${fmt.date(pts[i])}  ${fmt.price(s.spark[i])}`;
+    t.setAttribute('x', Math.min(+cx, 200)); t.setAttribute('text-anchor', 'start');
+  });
+  svg.addEventListener('pointerleave', () => { hov.style.display = 'none'; });
+}
+
+/* ---------- record (backtest) ---------- */
+(function record(){
+  const b = DATA.backtest, el = $('#record-body');
+  if (!b) { el.innerHTML = '<p>No backtest results were found. Run <code>backtest_score.py</code>, then rebuild.</p>'; return; }
+  const t = b.top10, a = b.all_eligible, bt = b.bottom10, p = b.portfolio;
+  const pp = (v, d=0, sign=true) => (sign && v > 0 ? '+' : '') + (v*100).toFixed(d) + '%';
+  const row = (name, s) => `<tr><td>${name}</td><td class="r num">${s.n.toLocaleString()}</td><td class="r num">${pp(s.avg_12m)}</td><td class="r num">${pp(s.median_12m)}</td><td class="r num">${pp(s.avg_vs_spy_12m)}</td><td class="r num">${(s.beat_spy_12m*100).toFixed(0)}%</td><td class="r num">${(s.lost_20pct_12m*100).toFixed(0)}%</td></tr>`;
+  const years = Object.entries(b.by_year);
+  const v1 = DATA.backtest_v1;
+  const v1note = v1 ? `<p><strong>The first version, for the record.</strong> Weighted 35% quality, 40% value, 25% timing with points off for flags, its top ten beat SPY only ${(v1.top10.beat_spy_12m*100).toFixed(0)}% of the time and trailed it by ${pp(v1.top10.avg_vs_spy_12m,1)} a year on average; its <em>bottom</em> ten did better (${pp(v1.bottom10.avg_vs_spy_12m,1)}). That is why the weights changed. Both versions are in the repository, and changing them again to chase a better number would be exactly the mistake this page warns about.</p>` : '';
+  const q = b.quintiles;
+  // quintile bar chart
+  const W = 460, H = 180, L = 44, R = 10, T = 18, B = 36;
+  const vals = [1,2,3,4,5].map(k => q[k].avg_vs_spy_12m);
+  const mx = Math.max(0.02, ...vals.map(Math.abs)); const y = v => T + (H-T-B) * (1 - (v + mx) / (2*mx)); const y0 = y(0);
+  const bw = (W-L-R)/5 - 14;
+  const bars = vals.map((v, i) => { const x = L + i*(W-L-R)/5 + 7; const top = Math.min(y(v), y0), h = Math.abs(y(v)-y0);
+    return `<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(h,1)}" rx="3" fill="${v >= 0 ? 'var(--accent)' : 'var(--accent-2)'}"/>
+      <text x="${x+bw/2}" y="${v >= 0 ? top-5 : top+h+13}" text-anchor="middle" style="fill:var(--ink)">${pp(v, 1)}</text>
+      <text x="${x+bw/2}" y="${H-14}" text-anchor="middle">${['Best fifth','2nd','3rd','4th','Worst fifth'][i]}</text>`; }).join('');
+  const qchart = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average 12-month return versus SPY by score quintile">
+    <line x1="${L}" x2="${W-R}" y1="${y0}" y2="${y0}" stroke="var(--rule-strong)"/>
+    <text x="${L-6}" y="${y0+4}" text-anchor="end">0</text><text x="${L-6}" y="${T+4}" text-anchor="end">${pp(mx,0)}</text><text x="${L-6}" y="${H-B+4}" text-anchor="end">${pp(-mx,0)}</text>
+    ${bars}</svg>`;
+  // cumulative growth chart
+  const c = p.curve; const CW = 640, CH = 240, CL = 40, CR = 64, CT = 16, CB = 28;
+  const ys = c.flatMap(r => [r[1], r[2]]); let lo = Math.min(...ys, 1), hi = Math.max(...ys); lo = lo*0.95; hi = hi*1.04;
+  const cx = i => CL + (CW-CL-CR)*i/(c.length-1), cy = v => CT + (CH-CT-CB)*(1-(v-lo)/(hi-lo));
+  const path = k => c.map((r, i) => `${i?'L':'M'}${cx(i).toFixed(1)},${cy(r[k]).toFixed(1)}`).join('');
+  const ticks = []; for (let v = Math.ceil(lo); v <= hi; v += (hi-lo > 6 ? 2 : 1)) ticks.push(v);
+  const grid = ticks.map(v => `<line x1="${CL}" x2="${CW-CR}" y1="${cy(v).toFixed(1)}" y2="${cy(v).toFixed(1)}" stroke="var(--rule)"/><text x="${CL-6}" y="${(cy(v)+4).toFixed(1)}" text-anchor="end">×${v}</text>`).join('');
+  const xt = c.map((r, i) => [r[0].slice(0,4), i]).filter(([yr, i], k, arr) => k === 0 || arr[k-1][0] !== yr).filter(([yr]) => +yr % 2 === 0)
+    .map(([yr, i]) => `<text x="${cx(i).toFixed(1)}" y="${CH-8}" text-anchor="middle">${yr}</text>`).join('');
+  const last = c[c.length-1];
+  const hp = c.map((r, i) => `<rect class="cp" data-i="${i}" x="${(cx(i)-(CW-CL-CR)/(c.length-1)/2).toFixed(1)}" y="${CT}" width="${((CW-CL-CR)/(c.length-1)).toFixed(1)}" height="${CH-CT-CB}" fill="transparent"/>`).join('');
+  const cchart = `<div class="chart-wrap"><svg class="chart" id="cum" viewBox="0 0 ${CW} ${CH}" role="img" aria-label="Growth of one dollar: top-10 portfolio versus SPY">
+    ${grid}${xt}
+    <path d="${path(2)}" fill="none" stroke="var(--accent-2)" stroke-width="2"/>
+    <path d="${path(1)}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    <text x="${(cx(c.length-1)+6).toFixed(1)}" y="${(cy(last[1])+4).toFixed(1)}" style="fill:var(--ink)">Top 10 ×${last[1].toFixed(1)}</text>
+    <text x="${(cx(c.length-1)+6).toFixed(1)}" y="${(cy(last[2])+4 + (Math.abs(cy(last[1])-cy(last[2])) < 12 ? (cy(last[2]) > cy(last[1]) ? 12 : -12) : 0)).toFixed(1)}" style="fill:var(--ink)">SPY ×${last[2].toFixed(1)}</text>
+    <g class="hover" style="display:none"><line y1="${CT}" y2="${CH-CB}" stroke="var(--ink-3)"/></g>
+    ${hp}</svg><div class="tip" id="cumtip"></div></div>
+    <div class="legend"><span>Ten highest-scoring stocks, equal weight, re-picked every quarter, 0.2% cost per quarter</span><span class="spy">SPY (price only)</span></div>`;
+  el.innerHTML = `
+    <div class="rec">
+      <div>
+        <p class="stat">In <b>${b.rebalance_dates}</b> quarterly tests from ${b.first.slice(0,4)} to ${b.last.slice(0,4)}, the ten highest-scoring stocks beat SPY over the following year <b>${(t.beat_spy_12m*100).toFixed(0)}%</b> of the time, by an average of <b>${pp(t.avg_vs_spy_12m,1)}</b>. The ten lowest-scoring beat it ${(bt.beat_spy_12m*100).toFixed(0)}% of the time.</p>
+        <p>Every pick used only what was public on the day: prices to that date and financial statements by their filing date. The pool was today's 100 largest companies plus ${DATA.counts.fallen} that were once large and later fell, so the score was tested on failures as well as successes. SPY itself averaged ${pp(b.spy_avg_12m,1)} over the same one-year windows.</p>
+        <table class="small"><thead><tr><th>Group</th><th class="r">Picks</th><th class="r">Avg 12-mo</th><th class="r">Median</th><th class="r">vs SPY</th><th class="r">Beat SPY</th><th class="r">Lost &gt;20%</th></tr></thead><tbody>
+          ${row('Top 10 by score', t)}${row('Top 10, from today\'s largest only', b.top10_top100_only)}${row('Top 10, from the fallen group only', b.top10_fallen_only)}${row('Bottom 10 by score', bt)}${row('Every scored stock', a)}
+        </tbody></table>
+        ${v1note}
+        <p>${p.cagr > p.spy_cagr ? 'Compounded quarterly with costs, the top-10 basket grew' : 'Compounded quarterly with costs, the top-10 basket grew only'} <span class="num">${pp(p.cagr,1)}</span> a year against SPY's <span class="num">${pp(p.spy_cagr,1)}</span>, with a worst fall of <span class="num">${pp(p.max_dd,0,false)}</span> against SPY's <span class="num">${pp(p.spy_max_dd,0,false)}</span>, and it beat SPY in ${(p.quarters_beat_spy*100).toFixed(0)}% of quarters.</p>
+      </div>
+      <div>
+        <h3>Does a higher score mean a better year?</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">Average 12-month return versus SPY, by score fifth. If the score carried no information, the five bars would be the same height.</p>
+        ${qchart}
+        <h3 style="margin-top:22px">Growth of $1</h3>
+        ${cchart}
+      </div>
+    </div>
+    <h3 style="margin-top:26px">Top 10 by year of purchase</h3>
+    <div class="table-wrap"><table class="small"><thead><tr><th>Year</th>${years.map(([y]) => `<th class="r">${y}</th>`).join('')}</tr></thead><tbody>
+      <tr><td>vs SPY, 12 mo</td>${years.map(([, s]) => `<td class="r num ${s.avg_vs_spy_12m >= 0 ? 'up' : 'down'}">${pp(s.avg_vs_spy_12m)}</td>`).join('')}</tr>
+      <tr><td>beat SPY</td>${years.map(([, s]) => `<td class="r num">${(s.beat_spy_12m*100).toFixed(0)}%</td>`).join('')}</tr>
+    </tbody></table></div>`;
+  const svg = $('#cum'), tip = $('#cumtip'), hov = svg.querySelector('.hover');
+  svg.addEventListener('pointermove', e => {
+    const r = e.target.closest('.cp'); if (!r) return; const i = +r.dataset.i, d = c[i];
+    hov.style.display = ''; const x = cx(i); hov.querySelector('line').setAttribute('x1', x); hov.querySelector('line').setAttribute('x2', x);
+    const box = svg.getBoundingClientRect(); tip.style.display = 'block';
+    tip.textContent = `${d[0].slice(0,7)}   Top 10 ×${d[1].toFixed(2)}   SPY ×${d[2].toFixed(2)}`;
+    tip.style.left = Math.min(e.clientX - box.left + 12, box.width - 220) + 'px'; tip.style.top = (e.clientY - box.top - 34) + 'px';
+  });
+  svg.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.style.display = 'none'; });
+})();
+
+renderTable();
+</script>
