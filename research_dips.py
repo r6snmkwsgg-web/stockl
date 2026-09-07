@@ -109,7 +109,7 @@ def study(prices: dict, tickers, spy: pd.Series, tag: str) -> pd.DataFrame:
     for thr in THRESHOLDS:
         for fresh in [False, True]:
             ev = events(f, thr, fresh)
-            ev.to_csv(OUT / "dips" / f"{tag}_events_{int(thr * 100)}pct_{'fresh' if fresh else 'any'}.csv")
+            ev.to_csv(OUT / "dips" / f"{tag.split('/')[0].replace(' ', '_')}_events_{int(thr * 100)}pct_{'fresh' if fresh else 'any'}.csv")
             rows.append(table(ev, f"strong stock, {thr:.0%} below 52w high{', high set <60d ago' if fresh else ''}"))
     ev = events(f, 0.20, False)
     rows.append(table(ev[ev.index <= "2018-12-31"], "20% dip, 2011-2018 only"))

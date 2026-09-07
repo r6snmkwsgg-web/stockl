@@ -8,6 +8,8 @@ for today's setups.
 important, the reasons the results are probably better than what you would get
 in real life. **Then read `RESEARCH.md`**, which tests 13 changes to the rules
 (including "hold a few days, take 20%") to see whether anything beats SPY.
+`RESEARCH_DIPS.md` then tests the idea of buying structurally strong stocks
+after a big dip, against a control group of fallen stocks.
 
 ## What is in here
 
@@ -18,6 +20,11 @@ in real life. **Then read `RESEARCH.md`**, which tests 13 changes to the rules
 | `scan_today.py` | Step 5. Downloads fresh prices and prints today's setups with entry, stop and share count. |
 | `research_variants.py` | Runs 13 rule variants, with costs and a first-half / second-half split. Writes `results/variants.md`. |
 | `RESEARCH.md` | Write-up of the variant research. |
+| `research_dips.py` | Event study: what happens after strong stocks fall 10-30% from their 52-week high, on today's top 100 and on a control group of fallen stocks. |
+| `scan_dips.py` | Prints today's structurally strong stocks that are 20%+ below their 52-week high. |
+| `swing/control_universe.py` | The control group: 95 once-large or once-popular stocks that later lagged or crashed. |
+| `RESEARCH_DIPS.md` | Write-up of the dip research. |
+| `data/control/` | Prices for the control group. |
 | `swing/universe.py` | The list of 100 stocks. |
 | `swing/data.py` | Download / load code (stooq with Yahoo fallback). |
 | `swing/indicators.py` | Moving averages, RSI, ATR, 52-week high/low, pullback detection. |
@@ -40,6 +47,10 @@ python run_backtest.py
 
 # extra: test 13 rule variants (about a minute)
 python research_variants.py
+
+# extra: the dip study (needs data/control, included in the repo)
+python research_dips.py
+python scan_dips.py --no-download        # today's strong-stock-in-a-dip list
 
 # 5. any day after the close: what matches the setup today?
 python scan_today.py                       # $3,000 account, 2% risk (defaults)
