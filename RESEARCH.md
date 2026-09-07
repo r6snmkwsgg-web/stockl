@@ -162,3 +162,27 @@ I am not saying stop. I am saying the next step is not another exit rule.
 5. **Whatever you test, use 0.1% costs from the first run and keep a half of
    the data you never look at until the end.** Every "great" backtest I have
    seen fails one of those two.
+
+## 6. Swing trading only the best businesses (added later)
+
+Once the fundamentals-based quality score existed (see `RESEARCH_SCORE.md`),
+the obvious question was whether swing trading works if you only trade the
+top-quality names. `research_swing_quality.py` takes the best short-hold rule
+found above ("buy the dip": RSI(2) below 10 in an uptrend, buy the next open,
+sell at the first close above the 5-day average or after 10 days, 2 x ATR
+stop, 1% risk, 5 positions) and allows it only on stocks whose quality score
+is in the top 30% that day. Results in `results/swing_quality.md`:
+
+| Run | trades | per year | win rate | avg % per trade | days held | CAGR | SPY CAGR |
+|---|---|---|---|---|---|---|---|
+| no costs | 2182 | 160 | 65% | +0.24% | 3.2 | +5.7% | +12.9% |
+| 0.1% cost per side | 2205 | 161 | 61% | +0.06% | 3.1 | -1.1% | +12.9% |
+| 2013-18, with costs | 889 | 148 | 58% | -0.12% | 3.1 | -6.1% | +9.4% |
+| 2019-26, with costs | 1317 | 172 | 63% | +0.13% | 3.1 | +1.3% | +15.8% |
+
+Sixty-five percent of trades win, and it still loses to the index by a mile,
+because the average trade makes a quarter of one percent and a round trip
+costs a fifth of one percent. The same names held for months (the Bargain
+Ledger basket) compounded at about 21% a year over the same period. Same
+stocks, same "buy the dip" instinct; the difference is entirely how long you
+hold and how often you pay the spread.
