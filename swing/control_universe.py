@@ -18,5 +18,7 @@ FALLEN = [
     "CVNA", "PLUG", "GME", "AMC", "HOOD", "COIN", "RBLX", "U", "AFRM", "UPST", "SOFI",
     "MRNA", "BNTX", "NVAX", "ROKU", "SQ", "TWLO", "OKTA", "ZS", "CRWD", "NET", "DDOG",
     "SNOW", "PATH", "ABNB", "DASH", "LYFT", "UBER",
+    # added on request: widely followed "it always comes back" names
+    "MSTR", "SNDK",
 ]
 FALLEN = list(dict.fromkeys(FALLEN))

@@ -185,3 +185,23 @@ peaking on the same day 47 trading days ago). Historically, a group-wide
 fresh dip while SPY itself is near its highs is the *single-stock* kind of
 dip, not the March 2020 kind. I would want to know why the group fell before
 calling it undervalued. The scanner tells you where to look, not what to buy.
+
+## 6. "But MU, PLTR, MSTR and SNDK all dipped and came back"
+
+They did, most recently. The fair question is how often that happened across
+*every* big dip those same stocks ever had (`dip_examples.py`, full tables in
+`results/dip_examples.md`):
+
+| Stock | Separate 20%+ dips | Regained the old high within a year | A dip that failed |
+|---|---|---|---|
+| MU | 43 | 22 of 42 (52%) | Jan 2015: dipped 21%, then fell 67% more |
+| PLTR | 17 | 6 of 14 (43%) | 2021: eight dips in a row, each followed by a further 30 to 75% fall |
+| MSTR | 50 | 17 of 46 (37%) | every dip from Nov 2024 to Aug 2025 lost 56 to 74% over the next year |
+| SNDK | 4 | 3 of 3 | listed February 2025; its whole history is one boom |
+
+The dips you remember are the last ones before a run-up, remembered after the
+run-up. In the same names, a 20% dip got back to its high within a year
+roughly four to five times in ten, and when it did not, the further fall was
+usually severe. The scanner can and does point at these stocks (Micron was
+second on the Bargain Ledger on 4 September 2026); it cannot tell which kind
+of dip this one is, and neither can a chart.

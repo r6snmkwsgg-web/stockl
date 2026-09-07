@@ -42,7 +42,7 @@ SECTORS = {
                                  "PLTR", "INTC", "HPQ", "SHOP", "SNAP", "PINS", "ZM", "DOCU", "TWLO", "OKTA", "ZS",
                                  "CRWD", "NET", "DDOG", "SNOW", "PATH", "U", "RBLX", "ROKU", "PTON", "SQ", "PYPL",
                                  "COIN", "HOOD", "AFFRM", "AFRM", "UPST", "SOFI", "FISV", "ADP", "ETSY", "W", "CHWY",
-                                 "EBAY", "CVNA", "TDOC", "ABNB", "DASH", "LYFT", "UBER", "GME", "AMC"]},
+                                 "EBAY", "CVNA", "TDOC", "ABNB", "DASH", "LYFT", "UBER", "GME", "AMC", "MSTR", "SNDK"]},
     **{t: "Communication" for t in ["GOOGL", "META", "NFLX", "CMCSA", "DIS", "TMUS", "VZ", "T", "PARA", "WBD"]},
     **{t: "Consumer" for t in ["AMZN", "TSLA", "WMT", "COST", "PG", "HD", "KO", "PEP", "MCD", "PM", "LOW", "TJX",
                                "SBUX", "MDLZ", "BKNG", "NKE", "TGT", "KR", "KHC", "MO", "CL", "KMB", "GIS", "K",

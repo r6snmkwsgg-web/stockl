@@ -194,6 +194,7 @@ def score_day(rows: pd.DataFrame) -> pd.DataFrame:
         "priced above its 5-year norm (P/E top 20%)": r["pe_pct_5y"] > 0.80,
         "stale filings": r["days_since_filing"] > STALE_DAYS,
         "thin trading (<500k shares/day)": r["avgvol_real"] < MIN_AVG_VOLUME,
+        "short price history (<3 years)": r["ret3y_vs_spy"].isna(),
     }
     flag_df = pd.DataFrame({k: v.fillna(False).astype(bool) for k, v in flags.items()})
     r["flags"] = flag_df.apply(lambda row: [k for k, v in row.items() if v], axis=1)
