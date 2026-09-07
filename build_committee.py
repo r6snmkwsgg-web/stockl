@@ -84,10 +84,72 @@ def main():
         "first": bt.get("first"), "last": bt.get("last"),
     }
     sectors = sorted({s["sector"] for s in stocks})
+
+    # ---- monthly total-return history since end-2019 for the stress test (SPY + every candidate)
+    def monthly(t, d):
+        f = Path(d) / f"{t}.csv.gz"
+        if not f.exists():
+            return None
+        px = pd.read_csv(f, parse_dates=["Date"], index_col="Date")
+        col = px["AdjClose"] if "AdjClose" in px.columns else px["Close"]
+        col = col[col.index >= "2019-12-01"]
+        if not len(col):
+            return None
+        m = col.groupby([col.index.year, col.index.month]).last()
+        return m
+    spy_m = monthly("SPY", "data/prices")
+    months = [f"{y}-{mo:02d}" for (y, mo) in spy_m.index]
+    hist = {"months": months, "SPY": [round(float(v), 3) for v in spy_m]}
+    for s in stocks:
+        t = s["ticker"]
+        m = monthly(t, "data/prices")
+        if m is None:
+            m = monthly(t, "data/control")
+        if m is None:
+            hist[t] = [None] * len(months); continue
+        series = [None] * len(months)
+        for (y, mo), v in m.items():
+            key = f"{y}-{mo:02d}"
+            if key in months:
+                series[months.index(key)] = round(float(v), 3)
+        hist[t] = series
+        # per-name stress figures for the seats: 2022 and worst rolling 12 months since 2020
+        vals = pd.Series(series, dtype="float64")
+        def ret(a, b):
+            if a in months and b in months:
+                x, y = vals[months.index(a)], vals[months.index(b)]
+                if pd.notna(x) and pd.notna(y) and x > 0:
+                    return round((y / x - 1) * 100)
+            return None
+        s["r2022"] = ret("2021-12", "2022-12")
+        s["covid"] = ret("2020-01", "2020-03")
+        r12 = (vals / vals.shift(12) - 1).dropna()
+        s["worst12"] = round(float(r12.min()) * 100) if len(r12) and pd.notna(r12.min()) else None
+
+    # ---- macro backdrop for the Macro Strategist
+    def stats(t, d="data/macro"):
+        px = pd.read_csv(Path(d) / f"{t}.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
+        last = float(px.iloc[-1])
+        return {"last": round(last, 2), "r3m": round((last / float(px.iloc[-64]) - 1) * 100, 1), "r12m": round((last / float(px.iloc[-253]) - 1) * 100, 1),
+                "vs200": round((last / float(px.rolling(200).mean().iloc[-1]) - 1) * 100, 1), "r1m": round((last / float(px.iloc[-22]) - 1) * 100, 1),
+                "hi52_dd": round((last / float(px.iloc[-252:].max()) - 1) * 100, 1)}
+    tnx = pd.read_csv("data/macro/^TNX.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
+    vix = pd.read_csv("data/macro/^VIX.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
+    sec_names = {"XLK": "Technology", "XLF": "Financials", "XLV": "Health care", "XLE": "Energy", "XLB": "Materials", "XLI": "Industrials",
+                 "XLY": "Consumer discretionary", "XLP": "Consumer staples", "XLU": "Utilities", "XLRE": "Real estate", "XLC": "Communication"}
+    macro = {
+        "spy": stats("SPY", "data/prices"),
+        "ten_year": {"last": round(float(tnx.iloc[-1]), 2), "a_year_ago": round(float(tnx.iloc[-253]), 2), "three_months_ago": round(float(tnx.iloc[-64]), 2)},
+        "vix": {"last": round(float(vix.iloc[-1]), 1), "avg_1y": round(float(vix.iloc[-252:].mean()), 1)},
+        "sectors": [{"etf": e, "name": n, **stats(e)} for e, n in sec_names.items()],
+        "breadth": round(100 * sum(1 for x in stocks if isinstance(x.get("above_200"), (int, float)) and x["above_200"] > 0) / max(1, len(stocks))),
+        "fresh_dips": round(100 * sum(1 for x in stocks if x.get("fresh")) / max(1, len(stocks))),
+    }
     # SPY's own recent volatility, so the page can put the index share on the same footing
     spy_px = pd.read_csv("data/prices/SPY.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
     spy_vol = float(np.log(spy_px).diff().rolling(60).std().iloc[-1] * np.sqrt(252) * 100)
     data = {"as_of": payload["as_of"], "market": {**payload["market"], "spy_vol": round(spy_vol, 1)}, "stocks": stocks, "sectors": sectors,
+            "hist": hist, "macro": macro,
             "dist": dist, "record": record, "counts": payload["counts"]}
     js = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     page = TEMPLATE.read_text().replace("__DATA__", js)
