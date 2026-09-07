@@ -177,6 +177,7 @@ footer p{max-width:var(--measure)}
       <label>Sector <select id="sector"><option value="all">All sectors</option></select></label>
       <label>Min score <input type="number" id="minscore" value="0" min="0" max="100" step="5" style="width:64px"></label>
       <label><input type="checkbox" id="showoff"> Show unscored</label>
+      <label title="Quality, Value and Timing all 60 or more: a strong business, cheap versus its own history, well off its high"><input type="checkbox" id="rebound"> Only "undervalued on a dip"</label>
       <span class="count" id="count"></span>
     </div>
     <div class="split">
@@ -278,13 +279,15 @@ const HARD = /^(losing|negative free|stale|thin)/;
 })();
 
 /* ---------- table ---------- */
-const state = { k:'score', dir:-1, q:'', uni:'all', sector:'all', min:0, off:false, sel:null };
+const state = { k:'score', dir:-1, q:'', uni:'all', sector:'all', min:0, off:false, sel:null, rebound:false };
+const isRebound = s => s.eligible && s.quality >= 60 && s.value >= 60 && s.timing >= 60;
 const sectors = [...new Set(S.map(s => s.sector))].sort();
 for (const s of sectors) { const o = document.createElement('option'); o.value = s; o.textContent = s; $('#sector').appendChild(o); }
 
 function visible(){
   const q = state.q.trim().toLowerCase();
   return S.filter(s => (state.off || s.eligible)
+    && (!state.rebound || isRebound(s))
     && (state.uni === 'all' || s.universe === state.uni)
     && (state.sector === 'all' || s.sector === state.sector)
     && (!s.eligible || (s.score ?? 0) >= state.min)
@@ -343,6 +346,7 @@ $('#uni').addEventListener('change', e => { state.uni = e.target.value; renderTa
 $('#sector').addEventListener('change', e => { state.sector = e.target.value; renderTable(); });
 $('#minscore').addEventListener('input', e => { state.min = +e.target.value || 0; renderTable(); });
 $('#showoff').addEventListener('change', e => { state.off = e.target.checked; renderTable(); });
+$('#rebound').addEventListener('change', e => { state.rebound = e.target.checked; if (state.rebound) { state.k = 'value'; state.dir = -1; } renderTable(); });
 
 /* ---------- detail ---------- */
 function select(t, scroll=true){
@@ -435,9 +439,11 @@ function renderDetail(s){
   const row = (name, s) => `<tr><td>${name}</td><td class="r num">${s.n.toLocaleString()}</td><td class="r num">${pp(s.avg_12m)}</td><td class="r num">${pp(s.median_12m)}</td><td class="r num">${pp(s.avg_vs_spy_12m)}</td><td class="r num">${(s.beat_spy_12m*100).toFixed(0)}%</td><td class="r num">${isNum(s.avg_vs_eligible_12m) ? pp(s.avg_vs_eligible_12m) : '\u2014'}</td><td class="r num">${(s.lost_20pct_12m*100).toFixed(0)}%</td></tr>`;
   const years = Object.entries(b.by_year);
   const eg = b.edge, sig = eg && eg.quarter_vs_eligible.t >= 2 && eg.quarter_vs_eligible.ci90[0] > 0;
+  const rb = b.rebound;
+  const reboundNote = rb && rb.n ? `<p><strong>The "undervalued on a dip" screen, tested.</strong> Take only the stocks where quality, value and timing all score 60 or more: a strong business, cheap against its own history, well off its high. That is the tick-box above the table. Historically it found about ${rb.per_date.toFixed(0)} names a quarter. They beat SPY over the next year <span class="num">${(rb.beat_spy_12m*100).toFixed(0)}%</span> of the time and averaged <span class="num">${pts(rb.avg_vs_spy_12m)} SPY</span> and <span class="num">${pts(rb.avg_vs_eligible_12m)} the average stock</span> in the list${rb.top100 && rb.fallen ? `; from today\'s largest companies the same screen averaged ${pts(rb.top100.avg_vs_spy_12m)} SPY (beat it ${(rb.top100.beat_spy_12m*100).toFixed(0)}% of the time), from the companies that later fell ${pts(rb.fallen.avg_vs_spy_12m)} SPY (beat it ${(rb.fallen.beat_spy_12m*100).toFixed(0)}% of the time)` : ''}. A dip in a strong company is only a bargain when the company stays strong, and the chart cannot tell you that in advance.</p>` : '';
   const edgeNote = eg ? `<p><strong>Could it be luck?</strong> The fairest yardstick is not SPY but the average stock in this list, because the list itself did well. Quarter by quarter, the top ten beat that average by <span class="num">${pp(eg.quarter_vs_eligible.mean,2)}</span> on average, with a nine-in-ten range of <span class="num">${pp(eg.quarter_vs_eligible.ci90[0],2)}</span> to <span class="num">${pp(eg.quarter_vs_eligible.ci90[1],2)}</span> when the ${eg.quarter_vs_eligible.n} quarters are resampled, and a t-statistic of ${eg.quarter_vs_eligible.t.toFixed(2)}. ${sig ? 'That range stays above zero, so the edge is probably real, though small.' : 'That range includes zero: with this much data the edge cannot be told apart from luck.'} Against SPY the quarterly edge is ${pp(eg.quarter_vs_spy.mean,2)} (range ${pp(eg.quarter_vs_spy.ci90[0],2)} to ${pp(eg.quarter_vs_spy.ci90[1],2)}). The weights were also chosen after looking at this same period, which is a reason to expect the future to be a little worse.</p>` : '';
   const v1 = DATA.backtest_v1;
-  const v1note = v1 ? `<p><strong>The first version, for the record.</strong> Weighted 35% quality, 40% value, 25% timing with points off for flags, its top ten beat SPY ${(v1.top10.beat_spy_12m*100).toFixed(0)}% of the time and averaged ${pts(v1.top10.avg_vs_spy_12m)} against it; its <em>bottom</em> ten averaged ${pts(v1.bottom10.avg_vs_spy_12m)}. Same data, same dates, same costs as the current version above. That is why the weights changed. Both versions are in the repository, and changing them again to chase a better number would be exactly the mistake this page warns about.</p>` : '';
+  const v1note = v1 ? `<p><strong>The first version, for the record.</strong> Weighted 35% quality, 40% value, 25% timing with points off for flags, its top ten beat SPY ${(v1.top10.beat_spy_12m*100).toFixed(0)}% of the time and averaged ${pts(v1.top10.avg_vs_spy_12m)} it; its <em>bottom</em> ten averaged ${pts(v1.bottom10.avg_vs_spy_12m)} it. Same data, same dates, same costs as the current version above. That is why the weights changed. Both versions are in the repository, and changing them again to chase a better number would be exactly the mistake this page warns about.</p>` : '';
   const q = b.quintiles;
   // quintile bar chart
   const W = 460, H = 180, L = 44, R = 10, T = 18, B = 36;
@@ -475,9 +481,10 @@ function renderDetail(s){
   el.innerHTML = `
     <div class="rec">
       <div>
-        <p class="stat">In <b>${b.rebalance_dates}</b> quarterly tests from ${b.first.slice(0,4)} to ${b.last.slice(0,4)}, the ten highest-scoring stocks beat SPY over the following year <b>${(t.beat_spy_12m*100).toFixed(0)}%</b> of the time, and across all picks averaged <b>${pts(t.avg_vs_spy_12m)}</b> against SPY. The ten lowest-scoring beat it ${(bt.beat_spy_12m*100).toFixed(0)}% of the time.</p>
+        <p class="stat">In <b>${b.rebalance_dates}</b> quarterly tests from ${b.first.slice(0,4)} to ${b.last.slice(0,4)}, the ten highest-scoring stocks beat SPY over the following year <b>${(t.beat_spy_12m*100).toFixed(0)}%</b> of the time, and across all picks averaged <b>${pts(t.avg_vs_spy_12m)} SPY</b>. The ten lowest-scoring beat it ${(bt.beat_spy_12m*100).toFixed(0)}% of the time.</p>
         <p>Every pick used only what was public on the day: prices to that date and financial statements by their filing date. Returns are total returns, dividends included, for the picks and for SPY alike. The pool was today's 100 largest companies plus ${DATA.counts.fallen} that were once large and later fell, so the score was tested on failures as well as successes. SPY itself averaged ${pp(b.spy_avg_12m,1)} over the same one-year windows.</p>
         ${edgeNote}
+        ${reboundNote}
         <div class="table-wrap"><table class="small"><thead><tr><th>Group</th><th class="r">Picks</th><th class="r">Avg 12-mo</th><th class="r">Median</th><th class="r">vs SPY</th><th class="r">Beat SPY</th><th class="r">vs avg stock</th><th class="r">Lost &gt;20%</th></tr></thead><tbody>
           ${row('Top 10 by score', t)}${row('Top 10, from today\'s largest only', b.top10_top100_only)}${row('Top 10, from the fallen group only', b.top10_fallen_only)}${row('Bottom 10 by score', bt)}${row('Every scored stock', a)}
         </tbody></table></div>

@@ -135,6 +135,12 @@ def main():
         "by_year": {int(k): stats(g) for k, g in top.groupby(top.date.dt.year)},
         "spy_avg_12m": float(p.groupby("date").spy252.first().mean()),
     }
+    # the "undervalued on a dip" screen: strong business, cheap vs its own norm, well off its high
+    rb = p[(p.quality >= 60) & (p.value >= 60) & (p.timing >= 60)]
+    res["rebound"] = dict(stats(rb), per_date=float(rb.groupby("date").size().mean()) if len(rb) else 0.0,
+                          dates_with_any=int(rb.date.nunique()),
+                          top100=stats(rb[rb.universe == "top-100"]) if len(rb) else None,
+                          fallen=stats(rb[rb.universe == "fallen"]) if len(rb) else None)
     # quarterly (non-overlapping) edge of the top-10 basket, per date
     byd = top.groupby("date").agg(port=("fwd63", "mean"), spy=("spy63", "first"), elig=("e63", "mean"))
     jan = top[top.date.dt.month == 1]
@@ -195,6 +201,14 @@ def main():
     L.append("|---|---|---|---|---|")
     for k, s in res["by_year"].items():
         L.append(f"| {k} | {s['n']} | {s['avg_12m']:+.1%} | {s['avg_vs_spy_12m']:+.1%} | {s['beat_spy_12m']:.0%} |")
+    r_ = res["rebound"]
+    L.append("## The 'undervalued on a dip' screen (quality, value and timing all >= 60)\n")
+    L.append(f"{r_['n']} stock-quarters, about {r_['per_date']:.1f} names per date on {r_['dates_with_any']} of {len(dates)} dates: "
+             f"avg 12-mo {r_['avg_12m']:+.1%}, median {r_['median_12m']:+.1%}, vs SPY {r_['avg_vs_spy_12m']:+.1%}, beat SPY {r_['beat_spy_12m']:.0%}, "
+             f"vs average stock {r_['avg_vs_eligible_12m']:+.1%}, lost >20% {r_['lost_20pct_12m']:.0%}.")
+    if r_["top100"] and r_["top100"]["n"]:
+        L.append(f"From today's largest: {r_['top100']['n']} picks, vs SPY {r_['top100']['avg_vs_spy_12m']:+.1%}, beat {r_['top100']['beat_spy_12m']:.0%}. "
+                 f"From the fallen group: {r_['fallen']['n']} picks, vs SPY {r_['fallen']['avg_vs_spy_12m']:+.1%}, beat {r_['fallen']['beat_spy_12m']:.0%}.\n")
     pf = res["portfolio"]
     L.append(f"\n## Top-10 portfolio, rebalanced quarterly, 0.2% cost per quarter\n")
     L.append(f"* CAGR {pf['cagr']:+.1%} vs SPY {pf['spy_cagr']:+.1%}; total {pf['total']:+.0%} vs {pf['spy_total']:+.0%}")

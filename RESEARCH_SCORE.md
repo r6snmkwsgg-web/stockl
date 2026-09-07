@@ -91,16 +91,16 @@ basket of the top ten, paying 0.2% per quarter in costs, was compounded.
 
 ### First version (35% quality, 40% value, 25% timing, points off per flag)
 
-Same data, dates and costs as the current version below.
+Same corrected data, dates and costs as the current version below.
 
-| Group | picks | avg 12-mo | median | vs SPY | beat SPY | lost >20% |
-|---|---|---|---|---|---|---|
-| Top 10 by score | 550 | +14.0% | +11.1% | +0.6% | 47% | 15% |
-| Bottom 10 by score | 550 | +16.6% | +12.7% | +3.2% | 50% | 8% |
-| Every eligible stock | 5486 | +14.9% | +11.8% | +1.3% | 48% | 11% |
+| Group | picks | avg 12-mo | median | vs SPY | beat SPY | vs avg stock | lost >20% |
+|---|---|---|---|---|---|---|---|
+| Top 10 by score | 550 | +13.4% | +11.7% | -2.0% | 44% | -4.9% | 15% |
+| Bottom 10 by score | 550 | +19.6% | +15.0% | +4.2% | 49% | +1.3% | 8% |
+| Every eligible stock | 5980 | +17.9% | +14.8% | +2.5% | 50% | -0.0% | 10% |
 
-By score fifth, versus SPY: best fifth +1.5%, worst fifth +3.1%. The basket
-compounded at 12.6% a year, level with SPY, with the same 24% worst fall.
+By score fifth, versus SPY: best fifth -0.8%, worst fifth +5.7%. The basket
+compounded at 11.3% a year against SPY's 14.8%, worst fall -22%.
 
 The top picks did worse than the bottom picks. Looking at the three parts
 separately (both halves of the data agree):
@@ -118,28 +118,62 @@ this period were where returns came from.
 
 ### Current version (70% quality, 20% value, 10% timing, no flag penalty)
 
-| Group | picks | avg 12-mo | median | vs SPY | beat SPY | lost >20% |
-|---|---|---|---|---|---|---|
-| Top 10 by score | 550 | +16.8% | +14.4% | +3.4% | 54% | 15% |
-| Top 10, from today's largest only | 454 | +19.9% | +18.2% | +6.4% | 58% | 11% |
-| Top 10, from the fallen group only | 96 | +2.0% | -2.4% | -10.7% | 31% | 30% |
-| Bottom 10 by score | 550 | +13.7% | +10.6% | +0.3% | 47% | 10% |
-| Every eligible stock | 5486 | +14.9% | +11.8% | +1.3% | 48% | 11% |
+Corrected run: share counts scaled for later splits, total returns with
+dividends for the picks and for SPY, quarters measured rebalance to rebalance.
 
-By score fifth, average 12-month return versus SPY: best fifth +3.9%, then
-+1.3%, +1.6%, +0.0%, worst fifth -0.6%. The order is right, which is the
-minimum a score has to achieve to mean anything.
+| Group | picks | avg 12-mo | median | vs SPY | beat SPY | vs avg stock | lost >20% |
+|---|---|---|---|---|---|---|---|
+| Top 10 by score | 550 | +18.8% | +15.6% | +3.4% | 51% | +0.5% | 14% |
+| Top 10, from today's largest only | 450 | +22.1% | +19.1% | +6.5% | 56% | +3.4% | 11% |
+| Top 10, from the fallen group only | 100 | +3.9% | -2.9% | -10.4% | 29% | -12.5% | 28% |
+| Bottom 10 by score | 550 | +19.2% | +14.7% | +3.8% | 50% | +0.9% | 9% |
+| Every eligible stock | 5980 | +17.9% | +14.8% | +2.5% | 50% | -0.0% | 10% |
 
-Quarterly-rebalanced top-10 basket with costs: 18.2% a year against SPY's
-12.4%, worst fall 34% against SPY's 24%, beat SPY in 60% of quarters.
+SPY averaged +15.4% (total return) over the same windows. By score
+fifth, versus SPY: best fifth +3.0%, worst fifth +1.9%.
 
-A note on how much these numbers move: an earlier run of the same weights,
-before the parser learned to stitch a company's history across changed
-filing labels, showed 49% beating SPY and a 15.0% basket. Nothing about the
-score changed; only how many company-quarters had usable data (3,500 then,
-5,486 now). Treat every figure here as "roughly", not "exactly".
+Quarterly-rebalanced top-10 basket with costs: 21.0% a year against SPY's
+14.8%, worst fall -29% against SPY's -24%, beat SPY in
+60% of quarters.
+
+### Is the edge real?
+
+| Measure | dates | mean | t-stat | 90% bootstrap range |
+|---|---|---|---|---|
+| Quarter vs SPY (non-overlapping) | 55 | +1.80% | 2.00 | +0.36% to +3.31% |
+| Quarter vs average eligible stock | 55 | +1.18% | 1.30 | -0.27% to +2.71% |
+| 12-mo vs SPY, January dates only | 14 | +6.89% | 1.52 | -0.11% to +14.32% |
+| 12-mo vs average eligible, January only | 14 | +3.81% | 0.85 | -2.79% to +11.26% |
+
+The fair yardstick is the average stock in the list, not SPY, because the
+list itself beat SPY (half of it is today's winners). Against that yardstick
+the top ten's edge is about 1.2 points a quarter with a range that includes
+zero: it cannot be told apart from luck with this much data. The bottom ten
+did as well as the top ten over 12 months. The edge over SPY is mostly the
+list, not the score.
 
 Full year-by-year tables are in `results/score_backtest.md`.
+
+### The "undervalued on a dip" screen
+
+The original brief was stocks that are undervalued, in a dip, and could run
+back up to fair value. On the page that is the tick-box "Only undervalued on
+a dip": quality, value and timing all 60 or more, meaning a strong business,
+cheap against its own five-year history, and well off its 52-week high.
+Tested the same point-in-time way (about 7 names a quarter, 341
+stock-quarters):
+
+| Screen | picks | avg 12-mo | median | vs SPY | beat SPY | vs avg stock | lost >20% |
+|---|---|---|---|---|---|---|---|
+| Whole list | 341 | +17.1% | +10.6% | -1.3% | 44% | -3.4% | 15% |
+| From today's largest only | 238 | +23.3% | +15.0% | +4.3% | 53% | +2.1% | 10% |
+| From the fallen group only | 103 | +3.0% | -1.2% | -14.4% | 24% | -16.0% | 27% |
+
+Loosening the screen to 50 gives +0.3% vs SPY (46% beat); tightening it to
+70 gives -14.9% (22% beat) on 37 picks. The pattern is the one the dip
+study found: a dip in a strong company is a bargain only when the company
+stays strong, and price and filings cannot tell you that in advance. The
+companies that later fell were also "strong, cheap and dipping" on the day.
 
 ## 5. What to make of it
 

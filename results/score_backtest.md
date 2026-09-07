@@ -51,6 +51,11 @@ A t-stat below about 2 means the edge cannot be told apart from luck with this m
 | 2023 | 40 | +25.3% | -2.8% | 35% |
 | 2024 | 40 | +22.4% | +4.9% | 52% |
 | 2025 | 30 | +24.3% | +4.4% | 40% |
+## The 'undervalued on a dip' screen (quality, value and timing all >= 60)
+
+341 stock-quarters, about 6.6 names per date on 52 of 55 dates: avg 12-mo +17.1%, median +10.6%, vs SPY -1.3%, beat SPY 44%, vs average stock -3.4%, lost >20% 15%.
+From today's largest: 238 picks, vs SPY +4.3%, beat 53%. From the fallen group: 103 picks, vs SPY -14.4%, beat 24%.
+
 
 ## Top-10 portfolio, rebalanced quarterly, 0.2% cost per quarter
 
