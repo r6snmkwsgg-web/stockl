@@ -20,13 +20,30 @@ TEMPLATE = Path("committee_template.html")
 OUT = Path("site/committee.html")
 STANDALONE = Path("site/ledger_committee.html")
 TOP_N = 400   # all eligible stocks; the committee, not the score, does the choosing
+PRICE_DIRS = ["data/prices", "data/control", "data/prices_mid", "data/prices_small", "data/prices_spec"]
 
 
 def main():
     html = Path("site/index.html").read_text()
     payload = json.loads(re.search(r"const DATA = (\{.*?\});\nconst S = DATA.stocks", html, re.S).group(1))
     el = [s for s in payload["stocks"] if s["eligible"]][:TOP_N]
-    keep = ["ticker", "name", "sector", "universe", "rank", "score", "quality", "value", "timing", "verdict", "price", "mcap",
+    # moonshot pool for the Extreme profile: liquid small companies that fail the Ledger's profit rules but have a real,
+    # growing revenue line (pre-profit growth companies) or are in the speculative list
+    num = lambda v: isinstance(v, (int, float))
+    def spec_ok(s):
+        if s["universe"] not in ("spec", "small") or s["eligible"]:
+            return False
+        if s.get("reason") not in ("price under $10", "losing money", "negative free cash flow", "less than 3 years of price history"):
+            return False
+        if not (num(s.get("price")) and s["price"] >= 2 and num(s.get("mcap")) and s["mcap"] >= 5e7):
+            return False
+        growing = (num(s.get("rev_growth")) and s["rev_growth"] > 15) or (num(s.get("revenue_ttm")) and s["revenue_ttm"] > 2e7)
+        funded = (num(s.get("runway_years")) and s["runway_years"] >= 1) or (num(s.get("net_income_ttm")) and s["net_income_ttm"] > 0)
+        return bool(growing and funded)
+    moon = [dict(s, moonshot=True) for s in payload["stocks"] if spec_ok(s)]
+    el = el + moon
+    keep = ["ticker", "name", "sector", "universe", "rank", "score", "quality", "value", "timing", "verdict", "price", "mcap", "moonshot", "eligible", "reason",
+            "share_growth_1y", "runway_years", "cash", "net_income_ttm",
             "dip", "fresh", "days_since_high", "above_200", "pe", "pe_pct_5y", "ps", "fcf_yield", "earnings_yield", "roe",
             "net_margin", "fcf_margin", "rev_growth", "ni_growth", "debt_to_equity", "ret1y", "ret3y_vs_spy", "vol60", "flags", "financial", "spark", "revenue_ttm", "net_income_ttm"]
     stocks = [{k: s.get(k) for k in keep} for s in el]
@@ -34,7 +51,7 @@ def main():
         s["spark"] = [v for v in s["spark"][::4]] if s.get("spark") else []   # ~13 points, enough for a mini line
         t = s["ticker"]
         # price trend: month-end closes over the last year, as % change from a year ago
-        for d in ["data/prices", "data/control"]:
+        for d in PRICE_DIRS:
             f = Path(d) / f"{t}.csv.gz"
             if f.exists():
                 px = pd.read_csv(f, parse_dates=["Date"], index_col="Date")["Close"]
@@ -80,8 +97,8 @@ def main():
          "blurb": "Today's largest companies, up to 45% volatility, half in the index fund."},
         {"id": "high", "name": "High", "universes": ["top100", "mid"], "vol_cap": 60, "index": 30, "npos": 8,
          "blurb": "Large and mid-sized companies (S&P 400), up to 60% volatility, less in the index fund."},
-        {"id": "extreme", "name": "Extreme", "universes": ["top100", "mid", "small"], "vol_cap": 999, "index": 10, "npos": 10,
-         "blurb": "Everything down to small caps (S&P 600), no volatility limit, almost nothing in the index fund. Big winners and big blow-ups live here."},
+        {"id": "extreme", "name": "Extreme", "universes": ["small", "spec"], "vol_cap": 999, "index": 0, "npos": 8,
+         "blurb": "Small and micro caps only, including companies that are not yet profitable, no volatility limit, no index fund unless you add it. The seats switch to growth jobs: revenue acceleration, cash runway, dilution, catalysts. Big winners and total wipe-outs live here."},
     ]
     for tier in TIERS:
         f = Path(f"results/tier_{tier['id']}.json")
@@ -123,9 +140,11 @@ def main():
     hist = {"months": months, "SPY": [round(float(v), 3) for v in spy_m]}
     for s in stocks:
         t = s["ticker"]
-        m = monthly(t, "data/prices")
-        if m is None:
-            m = monthly(t, "data/control")
+        m = None
+        for d in PRICE_DIRS:
+            m = monthly(t, d)
+            if m is not None:
+                break
         if m is None:
             hist[t] = [None] * len(months); continue
         series = [None] * len(months)
@@ -146,6 +165,18 @@ def main():
         s["covid"] = ret("2020-01", "2020-03")
         r12 = (vals / vals.shift(12) - 1).dropna()
         s["worst12"] = round(float(r12.min()) * 100) if len(r12) and pd.notna(r12.min()) else None
+
+    # ---- base rates: what small and speculative stocks actually did, year by year, since 2020
+    base = {}
+    for tier_name, pool in [("small", [x for x in stocks if x["universe"] in ("small", "spec")]), ("large", [x for x in stocks if x["universe"] == "top100"])]:
+        n2 = n3 = nhalf = tot = 0
+        for x in pool:
+            ser = pd.Series(hist.get(x["ticker"], []), dtype="float64")
+            r12 = (ser / ser.shift(12) - 1).dropna()
+            tot += len(r12); n2 += int((r12 >= 1.0).sum()); n3 += int((r12 >= 2.0).sum()); nhalf += int((r12 <= -0.5).sum())
+        if tot:
+            base[tier_name] = {"n": tot, "doubled": n2 / tot, "tripled": n3 / tot, "halved": nhalf / tot}
+    macro_base = base
 
     # ---- macro backdrop for the Macro Strategist
     def stats(t, d="data/macro"):
@@ -170,7 +201,7 @@ def main():
     spy_px = pd.read_csv("data/prices/SPY.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
     spy_vol = float(np.log(spy_px).diff().rolling(60).std().iloc[-1] * np.sqrt(252) * 100)
     data = {"as_of": payload["as_of"], "market": {**payload["market"], "spy_vol": round(spy_vol, 1)}, "stocks": stocks, "sectors": sectors,
-            "hist": hist, "macro": macro, "tiers": TIERS,
+            "hist": hist, "macro": macro, "tiers": TIERS, "base_rates": macro_base,
             "dist": dist, "record": record, "counts": payload["counts"]}
     js = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     page = TEMPLATE.read_text().replace("__DATA__", js)

@@ -105,6 +105,9 @@ def features(ticker: str, px: pd.DataFrame, calendar: pd.DatetimeIndex, spy: pd.
     out["rev_growth"] = (rev / f["revenue_ttm_1y"] - 1).where(f["revenue_ttm_1y"] > 0)
     out["ni_growth"] = (ni / f["net_income_ttm_1y"] - 1).where(f["net_income_ttm_1y"] > 0)
     out["debt_to_equity"] = (f["debt"] / eq).where(eq > 0)
+    out["share_growth_1y"] = f["shares"] / f["shares"].shift(252) - 1          # dilution: more shares = each one worth less
+    burn = (-fcf).where(fcf < 0)                                             # yearly cash burn, when burning
+    out["runway_years"] = (f["cash"] / burn).where(burn > 0)                 # how long the cash lasts at this burn
     # valuation versus the stock's own last 5 years (percentile: 0.10 = cheaper than 90% of its history)
     out["pe_pct_5y"] = out["pe"].rolling(1260, min_periods=504).rank(pct=True)
     out["ps_pct_5y"] = out["ps"].rolling(1260, min_periods=504).rank(pct=True)

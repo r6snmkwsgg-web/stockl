@@ -20,7 +20,7 @@ import pandas as pd
 
 from swing import data, fundamentals
 from swing.control_universe import FALLEN
-from swing.universe_extra import EXTRA_NAMES, MID, SMALL
+from swing.universe_extra import EXTRA_NAMES, MID, SMALL, SPEC
 from swing.score import NOT_SCORED, WEIGHTS, build_features, cross_section
 from swing.universe import ALL_TICKERS, MARKET, STOCKS
 
@@ -64,7 +64,7 @@ def load_prices():
     prices = data.load_all(ALL_TICKERS)
     for t in prices:
         TIER[t] = "top100"
-    for tier, lst, d in [("fallen", FALLEN, "data/control"), ("mid", MID, "data/prices_mid"), ("small", SMALL, "data/prices_small")]:
+    for tier, lst, d in [("fallen", FALLEN, "data/control"), ("mid", MID, "data/prices_mid"), ("small", SMALL, "data/prices_small"), ("spec", SPEC, "data/prices_spec")]:
         data.DATA_DIR = Path(d)
         for t, df in data.load_all(lst).items():
             if t not in prices:
@@ -215,6 +215,7 @@ def main():
             "roe": pct(r["roe"], 0), "net_margin": pct(r["net_margin"], 0), "fcf_margin": None if r["financial"] else pct(r["fcf_margin"], 0),
             "rev_growth": pct(r["rev_growth"], 1), "ni_growth": pct(r["ni_growth"], 0),
             "debt_to_equity": num(r["debt_to_equity"], 2), "revenue_ttm": num(r["revenue_ttm"], 0),
+            "share_growth_1y": pct(r["share_growth_1y"], 0), "runway_years": num(r["runway_years"], 1), "cash": num(r["cash"], 0),
             "net_income_ttm": num(r["net_income_ttm"], 0), "fcf_ttm": None if r["financial"] else num(r["fcf_ttm"], 0),
             "ret1y": pct(r["ret1y"], 0), "ret3y_vs_spy": pct(r["ret3y_vs_spy"], 0), "vol60": pct(r["vol60"], 0),
             "rsi14": num(r["rsi14"], 0), "days_since_filing": None if pd.isna(r["days_since_filing"]) else int(r["days_since_filing"]),
@@ -244,7 +245,8 @@ def main():
                    "top100": sum(s["universe"] == "top100" for s in stocks),
                    "fallen": sum(s["universe"] == "fallen" for s in stocks),
                    "mid": sum(s["universe"] == "mid" for s in stocks),
-                   "small": sum(s["universe"] == "small" for s in stocks)},
+                   "small": sum(s["universe"] == "small" for s in stocks),
+                   "spec": sum(s["universe"] == "spec" for s in stocks)},
     }
     js = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")
     html = TEMPLATE.read_text().replace("__DATA__", js)
