@@ -1,0 +1,387 @@
+<title>Ledger Committee</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#0B1220; --surface:#111B2E; --raised:#18243A; --rule:#26344D; --rule-strong:#3A4B69;
+  --ink:#E8ECF3; --ink-2:#A9B4C6; --ink-3:#6F7C92; --ivory:#E9E2D0; --ivory-2:#C9C1AC;
+  --q:#B8892E; --v:#2FA58F; --r:#D0604A; --s:#8C7FE0; --c:#E9E2D0;
+  --good:#4CBF7A; --bad:#E06666; --warn:#D9A24A;
+  --display:"Bodoni Moda",Didot,"Times New Roman",serif; --body:"Libre Franklin","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; --radius:4px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);font-weight:500;margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:clamp(44px,7vw,84px);letter-spacing:-0.01em;color:var(--ivory)}
+h2{font-size:26px;color:var(--ivory)} h3{font-size:19px;color:var(--ivory)}
+p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ivory);outline-offset:2px}
+a{color:var(--ivory-2)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 32px}
+
+/* masthead */
+.masthead{padding:44px 0 28px;border-bottom:1px solid var(--rule-strong);background:
+  radial-gradient(1200px 380px at 20% -10%,rgba(233,226,208,.07),transparent 60%),var(--ground)}
+.mast{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px 56px;align-items:end}
+.lede{font-family:var(--display);font-size:21px;line-height:1.35;color:var(--ink-2);max-width:32em;margin-top:16px}
+.lede em{color:var(--ivory);font-style:italic}
+.seats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.seat{border-top:2px solid var(--seat);padding:10px 2px 0;min-width:0}
+.seat .seal{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:17px;margin-bottom:8px}
+.seat b{display:block;font-weight:600;font-size:13px;color:var(--ink)}
+.seat span{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.seat.live .seal{box-shadow:0 0 0 4px color-mix(in oklab,var(--seat) 30%,transparent)}
+
+/* layout */
+.room{display:grid;grid-template-columns:360px minmax(0,1fr);gap:36px;padding:32px 0 72px;align-items:start}
+.brief{position:sticky;top:16px;background:var(--surface);border:1px solid var(--rule);padding:22px 22px 20px}
+.brief h2{font-size:22px;margin-bottom:4px}
+.brief .sub{font-size:12.5px;color:var(--ink-3);margin-bottom:16px}
+.field{display:grid;gap:5px;margin-bottom:14px}
+.field label,.field .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.field input[type=number],.field select,.field textarea{background:var(--ground);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:8px 10px;color:var(--ink);width:100%}
+.field textarea{min-height:64px;resize:vertical}
+.field input[type=range]{width:100%;accent-color:var(--ivory)}
+.field .val{font-family:var(--mono);font-size:13px;color:var(--ivory)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--rule-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:transparent;color:var(--ink-2);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--raised);border-color:var(--ivory-2);color:var(--ivory)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink-2);margin:4px 0}
+.check input{margin-top:3px;accent-color:var(--ivory)}
+.cta{width:100%;margin-top:6px;background:var(--ivory);color:var(--ground);border:0;border-radius:var(--radius);padding:12px 14px;font-weight:600;font-size:15px;cursor:pointer}
+.cta:disabled{opacity:.5;cursor:default}
+.cta.secondary{background:transparent;color:var(--ivory);border:1px solid var(--rule-strong);margin-top:8px}
+.status{font-size:12.5px;color:var(--ink-3);margin-top:12px;line-height:1.45}
+.status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
+
+/* minutes */
+.minutes-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--rule-strong);padding-bottom:10px;margin-bottom:8px}
+.minutes-head .state{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.minutes-head .state.on{color:var(--good)}
+.minutes-head .state.on::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:8px;vertical-align:middle;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.minutes-head .state.on::before{animation:none}.memo{animation:none!important}}
+.memo{border-left:2px solid var(--seat);padding:14px 0 18px 20px;margin:18px 0 0;animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.memo .who{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.memo .seal{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:15px;flex:none}
+.memo .who b{font-weight:600;color:var(--ink)}
+.memo .who span{font-size:12px;color:var(--ink-3)}
+.memo .who .t{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.memo .body{white-space:pre-wrap;max-width:68ch;color:var(--ink-2);font-size:15px}
+.memo .body.thinking{color:var(--ink-3);font-style:italic}
+.memo .body.thinking::after{content:"";display:inline-block;width:.6em;height:1em;vertical-align:-.15em;margin-left:2px;border-left:2px solid var(--seat);animation:pulse 1s steps(2) infinite}
+.memo .err{font-size:13px;color:var(--bad);margin-top:6px}
+
+/* decision */
+.decision{margin-top:26px;background:var(--surface);border:1px solid var(--rule-strong);border-top:3px solid var(--ivory);padding:24px 26px 26px;animation:rise .6s ease both}
+.decision .eyebrow{color:var(--ivory-2)}
+.decision h2{margin:6px 0 10px;font-size:30px}
+.decision .summary{font-family:var(--display);font-size:19px;line-height:1.35;color:var(--ink);max-width:36em}
+.alloc{margin:20px 0 6px;display:grid;gap:8px}
+.alloc .bar{display:grid;grid-template-columns:130px 1fr 72px 90px;gap:12px;align-items:center;font-size:13.5px}
+.alloc .bar .lab{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alloc .bar .lab small{display:block;color:var(--ink-3);font-weight:400;font-size:11.5px}
+.alloc .track{height:12px;background:var(--raised);border-radius:3px;overflow:hidden}
+.alloc .fill{height:100%;width:var(--w);background:var(--ink-2);border-radius:3px}
+.alloc .bar.index .fill{background:var(--ivory)}
+.alloc .bar.cash .fill{background:var(--rule-strong)}
+.alloc .pct,.alloc .usd{font-family:var(--mono);text-align:right;color:var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:18px}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--rule-strong)}
+th.r,td.r{text-align:right}
+td{padding:8px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+td .t{font-family:var(--mono);font-weight:500}
+td .n{display:block;font-size:11.5px;color:var(--ink-3)}
+td.why{color:var(--ink-2);max-width:36ch}
+svg.mini{width:70px;height:22px;display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:22px}
+.two h3{margin-bottom:8px}
+.two ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:13.5px} .two li{margin:4px 0}
+.votes{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.votes li{display:grid;grid-template-columns:30px 110px 1fr;gap:10px;align-items:start;font-size:13.5px}
+.votes .seal{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:13px}
+.votes b{font-weight:600}
+.vote{font-family:var(--mono);font-size:12px;padding:1px 8px;border-radius:999px;display:inline-block}
+.vote.approve{background:color-mix(in oklab,var(--good) 22%,transparent);color:var(--good)}
+.vote.dissent{background:color-mix(in oklab,var(--bad) 22%,transparent);color:var(--bad)}
+.vote.pending{background:var(--raised);color:var(--ink-3)}
+.record{margin-top:22px;padding:16px 18px;background:var(--ground);border:1px solid var(--rule)}
+.record h3{font-size:17px;margin-bottom:6px}
+.record p{font-size:13px;color:var(--ink-2);max-width:70ch}
+.record table{margin-top:10px;font-size:13px}
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.actions button{background:transparent;color:var(--ivory);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:9px 14px;cursor:pointer}
+.actions button.primary{background:var(--ivory);color:var(--ground);border-color:var(--ivory)}
+.empty{padding:36px 0 10px;color:var(--ink-3);max-width:60ch;font-size:14.5px}
+.empty b{color:var(--ink-2);font-weight:500}
+.example-tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:999px;padding:2px 9px;margin-bottom:12px}
+.how{max-width:70ch;margin:0 auto;padding:36px 32px 64px;border-top:1px solid var(--rule-strong);color:var(--ink-2);font-size:14.5px}
+.how h2{margin-bottom:10px;font-size:24px} .how p{margin:10px 0} .how ul{padding-left:20px;margin:8px 0} .how li{margin:4px 0}
+footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;margin:0 auto}
+@media (max-width:1000px){.mast,.room{grid-template-columns:1fr}.brief{position:static}.seats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.wrap{padding:0 18px}.alloc .bar{grid-template-columns:96px 1fr 56px 74px;gap:8px}.two{grid-template-columns:1fr}.votes li{grid-template-columns:30px 1fr}.votes li .note{grid-column:2}.how,footer{padding-left:18px;padding-right:18px}}
+</style>
+
+<header class="masthead"><div class="wrap mast">
+  <div>
+    <p class="eyebrow" id="eyebrow">In session &middot; numbers as of &mdash;</p>
+    <h1>Ledger Committee</h1>
+    <p class="lede">Four analysts and a chair sit over the Bargain Ledger&rsquo;s numbers and argue, in front of you, about <em>your</em> money. Each has one job and a reason to disagree. You get the minutes, the allocation, and the vote.</p>
+  </div>
+  <div class="seats" id="seats"></div>
+</div></header>
+
+<main class="wrap room">
+  <aside class="brief" aria-label="Your brief">
+    <h2>The brief</h2>
+    <p class="sub">What the committee is deciding for.</p>
+    <div class="field"><label for="amount">Amount to invest ($)</label><input id="amount" type="number" min="100" step="100" value="3000"></div>
+    <div class="field"><label for="horizon">How long can it stay invested?</label>
+      <select id="horizon"><option value="under a year">Under a year</option><option value="one to three years" selected>One to three years</option><option value="three to ten years">Three to ten years</option><option value="more than ten years">More than ten years</option></select></div>
+    <div class="field"><label for="loss">Worst single year you could sit through without selling</label>
+      <select id="loss"><option value="-10%">Down 10%</option><option value="-20%" selected>Down 20%</option><option value="-35%">Down 35%</option><option value="-50%">Down 50% or more</option></select></div>
+    <div class="field"><div class="row"><label for="npos">Number of individual stocks</label><span class="val" id="nposv">6</span></div><input id="npos" type="range" min="3" max="12" value="6"></div>
+    <div class="field"><div class="row"><label for="index">Share kept in a plain index fund</label><span class="val" id="indexv">50%</span></div><input id="index" type="range" min="0" max="100" step="5" value="50"></div>
+    <div class="field"><span class="lbl">Sectors to avoid</span><div class="chips" id="avoid"></div></div>
+    <div class="field"><span class="lbl">Preferences</span>
+      <label class="check"><input type="checkbox" id="pDiv"> Prefer companies that pay dividends</label>
+      <label class="check"><input type="checkbox" id="pVol" checked> Skip anything flagged very volatile</label>
+      <label class="check"><input type="checkbox" id="pDip"> Only stocks in a fresh pull-back</label>
+      <label class="check"><input type="checkbox" id="pBig" checked> Only today&rsquo;s largest companies (not the fallen list)</label></div>
+    <div class="field"><label for="notes">Anything else the committee should know</label><textarea id="notes" maxlength="400" placeholder="e.g. I already own a lot of Nvidia. I want to understand every pick in one sentence."></textarea></div>
+    <button class="cta" id="go">Convene the committee</button>
+    <button class="cta secondary" id="stop" hidden>Stop the session</button>
+    <p class="status" id="status">Checking whether this page can reach Claude&hellip;</p>
+  </aside>
+
+  <section aria-label="Minutes">
+    <div class="minutes-head"><h2>Minutes</h2><span class="state" id="state">not in session</span></div>
+    <div id="minutes"><p class="empty"><b>Fill in the brief and convene.</b> The Quality Analyst and the Value Analyst read the numbers first, the Risk Officer and the Skeptic answer them, and the Chair writes the allocation. Then every seat votes. It takes a minute or two; the memos appear as they are written.</p></div>
+    <p class="status" id="live" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
+  </section>
+</main>
+
+<section class="how">
+  <h2>How this works, and what it is not</h2>
+  <p>The candidates are the highest-scoring stocks on the Bargain Ledger: real filings, real prices, scored on business quality, price against the company&rsquo;s own history, and the timing of its pull-back. The committee only ever sees those numbers and your brief. It cannot browse, it has no memory between sessions, and every analyst is Claude with a different job and a different instruction to disagree.</p>
+  <ul>
+    <li><b>Quality Analyst</b> judges the businesses: profitability, growth, debt, the three-year record.</li>
+    <li><b>Value Analyst</b> judges the prices: cheap or dear against each company&rsquo;s own past and its peers.</li>
+    <li><b>Risk Officer</b> fits the picks to you: how much you can lose, how long you can wait, how concentrated it is.</li>
+    <li><b>The Skeptic</b> argues against the whole thing, using the record: the top picks beat the index about half the time.</li>
+    <li><b>The Chair</b> writes the allocation and takes the vote.</li>
+  </ul>
+  <p>Running a session spends a small amount of your own Claude usage; the page asks once. Nothing you type is stored. And plainly: this is a study tool that shows you how a disciplined argument over real numbers looks. It is not investment advice, it does not know your taxes or your life, and the record it argues from is a coin flip per stock.</p>
+</section>
+<footer><p id="foot"></p></footer>
+
+<script>
+document.documentElement.lang = 'en';
+const DATA = __DATA__;
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isNum = v => typeof v === 'number' && isFinite(v);
+const money = v => '$' + Math.round(v).toLocaleString('en-US');
+const pct = (v, d=0, sign=false) => !isNum(v) ? '\u2014' : ((sign && v > 0) ? '+' : '') + v.toFixed(d) + '%';
+const SEATS = [
+  {id:'q', name:'Quality Analyst', job:'Is it a good business?', color:'var(--q)', seal:'Q'},
+  {id:'v', name:'Value Analyst', job:'Is the price low?', color:'var(--v)', seal:'V'},
+  {id:'r', name:'Risk Officer', job:'Does it fit this person?', color:'var(--r)', seal:'R'},
+  {id:'s', name:'The Skeptic', job:'Why this will fail', color:'var(--s)', seal:'S'},
+  {id:'c', name:'The Chair', job:'Writes the allocation', color:'var(--c)', seal:'C'},
+];
+const seat = id => SEATS.find(s => s.id === id);
+$('#eyebrow').innerHTML = `In session &middot; numbers as of ${esc(DATA.as_of)} &middot; SPY ${DATA.market.ok ? 'above' : 'below'} its 200-day average`;
+$('#seats').innerHTML = SEATS.map(s => `<div class="seat" id="seat-${s.id}" style="--seat:${s.color}"><div class="seal">${s.seal}</div><b>${s.name}</b><span>${s.job}</span></div>`).join('');
+$('#foot').textContent = `Candidates: the ${DATA.stocks.length} highest-scoring stocks on the Bargain Ledger as of ${DATA.as_of}. Record: point-in-time test ${DATA.record.first || ''} to ${DATA.record.last || ''}. Not investment advice.`;
+for (const s of DATA.sectors) { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = s; b.setAttribute('aria-pressed', 'false'); b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); $('#avoid').appendChild(b); }
+$('#npos').oninput = e => $('#nposv').textContent = e.target.value;
+$('#index').oninput = e => $('#indexv').textContent = e.target.value + '%';
+
+/* ---------- the brief ---------- */
+function brief(){
+  const avoid = [...document.querySelectorAll('#avoid .chip[aria-pressed="true"]')].map(b => b.textContent);
+  return {
+    amount: Math.max(100, +$('#amount').value || 3000), horizon: $('#horizon').value, loss: $('#loss').value,
+    npos: +$('#npos').value, index: +$('#index').value / 100, avoid,
+    dividends: $('#pDiv').checked, noVol: $('#pVol').checked, freshOnly: $('#pDip').checked, bigOnly: $('#pBig').checked,
+    notes: $('#notes').value.trim().slice(0, 400),
+  };
+}
+function candidates(b){
+  return DATA.stocks.filter(s => !b.avoid.includes(s.sector) && (!b.noVol || !s.flags.some(f => f.startsWith('very volatile')))
+    && (!b.freshOnly || s.fresh) && (!b.bigOnly || s.universe === 'top100'));
+}
+function briefText(b){
+  return `THE BRIEF\n- Amount: ${money(b.amount)}\n- Time it can stay invested: ${b.horizon}\n- Worst single year they could sit through without selling: ${b.loss}\n- Individual stocks wanted: ${b.npos}\n- Share to keep in a plain S&P 500 index fund: ${Math.round(b.index*100)}%\n- Sectors to avoid: ${b.avoid.length ? b.avoid.join(', ') : 'none'}\n- Preferences: ${[b.dividends && 'prefers dividend payers', b.noVol && 'skip very volatile names', b.freshOnly && 'only fresh pull-backs', b.bigOnly && 'only today\'s largest companies'].filter(Boolean).join('; ') || 'none stated'}\n- In their words: ${b.notes || '(nothing added)'}`;
+}
+function dataText(cands){
+  const line = s => `${s.ticker} ${s.name} | ${s.sector} | score ${s.score} (quality ${s.quality}, value ${s.value}, timing ${s.timing}) | $${s.price} | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh, set ' + s.days_since_high + ' days ago)' : ''} | ${pct(s.above_200,0,true)} vs 200-day | P/E ${isNum(s.pe) ? s.pe : 'n/a'}${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? ' (cheaper than ' + (100 - s.pe_pct_5y) + '% of its own 5 yrs)' : ' (pricier than ' + s.pe_pct_5y + '% of its own 5 yrs)') : ''} | ${s.financial ? 'financial: no FCF' : 'FCF yield ' + pct(s.fcf_yield,1)} | ROE ${pct(s.roe)} | revenue ${pct(s.rev_growth,0,true)} | debt/equity ${isNum(s.debt_to_equity) ? s.debt_to_equity : 'n/a'} | 1-yr ${pct(s.ret1y,0,true)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | volatility ${pct(s.vol60)} | flags: ${s.flags.length ? s.flags.join('; ') : 'none'}`;
+  return `CANDIDATES (${cands.length} stocks, ranked by the Ledger score; all figures from SEC filings and prices as of ${DATA.as_of})\n` + cands.map(line).join('\n');
+}
+function recordText(){
+  const r = DATA.record, d = DATA.dist;
+  return `THE RECORD (point-in-time test, ${r.first} to ${r.last}, dividends included): a top-10 pick beat SPY over the next year ${Math.round(r.per_pick_beat_spy*100)}% of the time and averaged ${(r.per_pick_vs_spy*100).toFixed(1)} points vs SPY but only ${(r.per_pick_vs_avg*100).toFixed(1)} points vs the average candidate (the candidate list itself beat SPY). A 10-stock basket re-picked quarterly compounded at ${(r.basket_cagr*100).toFixed(1)}%/yr vs SPY ${(r.spy_cagr*100).toFixed(1)}%, worst fall ${Math.round(r.basket_maxdd*100)}% vs SPY ${Math.round(r.spy_maxdd*100)}%, beat SPY in ${Math.round(r.quarters_beat*100)}% of quarters. Picks from once-large companies that later fell beat SPY only ${Math.round(r.fallen_beat*100)}% of the time. The quarterly edge over the average candidate has a t-statistic of ${r.edge_vs_avg ? r.edge_vs_avg.t.toFixed(2) : 'n/a'} (not distinguishable from luck). In a bad year (worst 1 in 10) the basket lost ${Math.round(-d.basket[0]*100)}%.`;
+}
+const RULES = `You are one seat on an investment committee reviewing a real, numbers-only candidate list for one person. Write as a seasoned human analyst would in a meeting: direct, specific, plain English, no headings, no bullet symbols, no markdown, no mention of being an AI. Refer to stocks by ticker. Use only the numbers given. Never promise returns. Stay under the word limit.`;
+const PROMPTS = {
+  q: (b, cands) => `${RULES}\n\nYOUR SEAT: Quality Analyst. Your only question is whether each candidate is a genuinely strong business: return on equity, how much revenue becomes free cash, revenue growth, debt, the three-year record. Ignore price and timing; others cover those.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nWrite a memo of at most 170 words: name the ${Math.min(8, cands.length)} strongest businesses for this brief with one concrete reason each (cite a figure), name one popular candidate you refuse and why, and end with one sentence on what the Value Analyst should watch for.`,
+  v: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Value Analyst. Your only question is price: is each candidate cheap or dear against its own five-year history and against the others (P/E, free-cash-flow yield, earnings yield). Quality is someone else's job.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nThe Quality Analyst wrote:\n"""${memos.q}"""\n\nWrite a memo of at most 170 words: from the Quality Analyst's shortlist, which are reasonably priced and which are expensive against their own history (cite the figures); add up to two candidates they overlooked that are cheap AND decent; say which single name you would not pay today's price for.`,
+  r: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Risk Officer. Your job is fitting the portfolio to this person, not picking winners: their worst tolerable year (${b.loss}), their horizon (${b.horizon}), their ${money(b.amount)}, concentration by sector and by stock, volatility figures, the red flags in the data, and the index-fund share they asked for.\n\n${briefText(b)}\n\n${dataText(cands)}\n\n${recordText()}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nWrite a memo of at most 170 words. State a hard cap on any one sector and any one stock as a share of the whole amount, say whether the index-fund share they chose is enough for a person who can only sit through ${b.loss}, name any shortlisted stock that must be cut for risk (cite the volatility or flag), and give the Chair one constraint it may not break.`,
+  s: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Skeptic. You argue against the committee using the record and the known weaknesses of this method: the candidate list is partly hindsight (today's largest companies), the quality score chases the last cycle (it loved oil in January 2023 and Meta and AMD in January 2022), a dip in a strong company is only a bargain if the company stays strong, and the top picks beat the index about half the time.\n\n${briefText(b)}\n\n${recordText()}\n\nCandidate list summary: ${cands.slice(0, 20).map(s => s.ticker + ' (' + s.sector + ', score ' + s.score + ')').join(', ')}.\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nWrite at most 150 words: name the two picks most likely to be the ones that fail and why, say what would have to be true for this portfolio to beat a plain index fund, and state plainly what the record says the odds are. Be fair: if something in the memos is sound, say so in one sentence.`,
+  c: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Chair. Write the final allocation for this person from the candidate list, honouring the Risk Officer's constraint, the person's index-fund share (${Math.round(b.index*100)}% of the total; you may raise it, never lower it), exactly ${b.npos} individual stocks unless the memos give a strong reason for fewer, no sector above the Risk Officer's cap, and the person's stated preferences. Weights are shares of the WHOLE amount and must sum to 1 with the index fund and any cash.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nReply with only a JSON object, no other text, shaped exactly like this example:\n{"summary": "two or three plain sentences (max 60 words) on the shape of the portfolio and why", "index_weight": 0.5, "cash_weight": 0.0, "positions": [{"ticker": "XXXX", "weight": 0.1, "why": "one concrete reason under 20 words citing a figure"}], "risks": ["three short sentences, the most likely ways this loses money"], "watch": ["two short sentences: what to check before buying, e.g. earnings dates and the news behind the dip"], "dissent_expected": "one sentence on which seat will object and why"}`,
+  vote: (id, b, chair) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. The Chair proposes for this person (${money(b.amount)}, horizon ${b.horizon}, worst tolerable year ${b.loss}): index fund ${Math.round((chair.index_weight||0)*100)}%, cash ${Math.round((chair.cash_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}. Chair's summary: "${chair.summary}". Your earlier memo is what you said before.\n\nReply with only a JSON object like {"vote": "approve", "note": "one sentence under 25 words"} where vote is "approve" or "dissent". Dissent only if a constraint you cared about was broken.`,
+};
+
+/* ---------- rendering ---------- */
+const minutes = $('#minutes');
+let ctl = null, sample = null, session = 0;
+function clock(){ return new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}); }
+function memoCard(id){
+  const s = seat(id);
+  const el = document.createElement('article'); el.className = 'memo'; el.style.setProperty('--seat', s.color); el.id = 'memo-' + id;
+  el.innerHTML = `<div class="who"><div class="seal">${s.seal}</div><div><b>${s.name}</b><br><span>${s.job}</span></div><span class="t">${clock()}</span></div><div class="body thinking">Reading the numbers</div>`;
+  minutes.appendChild(el); $('#seat-' + id).classList.add('live');
+  return el;
+}
+function setBody(el, text, done){ const b = el.querySelector('.body'); b.classList.toggle('thinking', !done && !text); b.textContent = text || (done ? '' : 'Reading the numbers'); if (done) $('#seat-' + el.id.slice(5)).classList.remove('live'); }
+function fail(el, e){ const b = el.querySelector('.body'); b.classList.remove('thinking'); if (e.text) b.textContent = e.text; const m = document.createElement('p'); m.className = 'err'; m.textContent = copyFor(e.code); el.appendChild(m); }
+function copyFor(code){ return ({not_granted:'You declined to let this page use your Claude account, so the committee cannot sit. Reload to be asked again.', rate_limited:'Claude is busy right now. Wait a minute and convene again.', cancelled:'Session stopped.', invalid_json:'The Chair did not return a usable allocation. Convene again.', prompt_too_large:'The brief and data were too long for one call.', unavailable:'Claude could not be reached from this page.'})[code] || ('Something went wrong (' + code + ').'); }
+function mini(spark, color){
+  const v = (spark || []).filter(isNum); if (v.length < 2) return '';
+  const lo = Math.min(...v), hi = Math.max(...v), W = 70, H = 22;
+  const pts = v.map((y, i) => `${(i/(v.length-1)*W).toFixed(1)},${(H - 2 - (hi === lo ? H/2 : (y-lo)/(hi-lo)*(H-4))).toFixed(1)}`).join(' ');
+  return `<svg class="mini" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/><circle cx="${W}" cy="${pts.split(' ').pop().split(',')[1]}" r="2" fill="${color}"/></svg>`;
+}
+function renderDecision(b, chair, example){
+  const byT = Object.fromEntries(DATA.stocks.map(s => [s.ticker, s]));
+  let pos = (chair.positions || []).filter(p => byT[p.ticker] && isNum(p.weight) && p.weight > 0).slice(0, 12);
+  let idx = isNum(chair.index_weight) ? Math.max(b.index, Math.min(1, chair.index_weight)) : b.index;
+  let cash = isNum(chair.cash_weight) ? Math.max(0, Math.min(0.5, chair.cash_weight)) : 0;
+  const sumPos = pos.reduce((a, p) => a + p.weight, 0), room = Math.max(0, 1 - idx - cash);
+  if (sumPos > 0) pos = pos.map(p => ({...p, weight: p.weight / sumPos * room})); else cash += room;
+  const bars = [{lab:'S&P 500 index fund', sub:'the part that just tracks the market', w:idx, cls:'index'}]
+    .concat(pos.map(p => ({lab:p.ticker, sub:byT[p.ticker].name, w:p.weight, cls:''})))
+    .concat(cash > 0.001 ? [{lab:'Cash', sub:'left aside', w:cash, cls:'cash'}] : []);
+  const maxW = Math.max(...bars.map(x => x.w), 0.01);
+  const sectors = {}; for (const p of pos) sectors[byT[p.ticker].sector] = (sectors[byT[p.ticker].sector] || 0) + p.weight;
+  const topSector = Object.entries(sectors).sort((a, b) => b[1] - a[1])[0];
+  const d = DATA.dist, stockPart = b.amount * (1 - idx - cash), indexPart = b.amount * idx;
+  const row = (i) => `<tr><td>${['Bad year (worst 1 in 10)','Below-average year','Typical year','Good year','Great year (best 1 in 10)'][i]}</td><td class="r num">${money(stockPart*(1+d.basket[i]) + indexPart*(1+d.spy[i]) + b.amount*cash)}</td><td class="r num">${money(b.amount*(1+d.spy[i]))}</td></tr>`;
+  const el = document.createElement('section'); el.className = 'decision'; el.id = 'decision';
+  el.innerHTML = `${example ? '<span class="example-tag">Example session, no AI</span>' : ''}<p class="eyebrow">The Chair&rsquo;s decision &middot; ${money(b.amount)}</p><h2>Allocation</h2>
+    <p class="summary">${esc(chair.summary || '')}</p>
+    <div class="alloc">${bars.map(x => `<div class="bar ${x.cls}"><div class="lab">${esc(x.lab)}<small>${esc(x.sub)}</small></div><div class="track"><div class="fill" style="--w:${(x.w/maxW*100).toFixed(1)}%"></div></div><div class="pct">${(x.w*100).toFixed(0)}%</div><div class="usd">${money(b.amount*x.w)}</div></div>`).join('')}</div>
+    ${topSector ? `<p class="status">Largest sector among the stocks: ${esc(topSector[0])} at ${(topSector[1]*100).toFixed(0)}% of the whole amount.</p>` : ''}
+    <table><thead><tr><th>Stock</th><th>Last year</th><th class="r">Score</th><th class="r">P/E</th><th class="r">From high</th><th>The Chair&rsquo;s reason</th></tr></thead><tbody>
+    ${pos.map(p => { const s = byT[p.ticker]; return `<tr><td><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} &middot; ${esc(s.sector)}</span></td><td>${mini(s.spark, 'var(--ivory-2)')}</td><td class="r num">${s.score}</td><td class="r num">${isNum(s.pe) ? s.pe.toFixed(1) : '\u2014'}</td><td class="r num">${pct(s.dip)}</td><td class="why">${esc(p.why || '')}</td></tr>`; }).join('')}
+    </tbody></table>
+    <div class="two"><div><h3>What could go wrong</h3><ul>${(chair.risks || []).slice(0, 4).map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+      <h3 style="margin-top:14px">Before buying</h3><ul>${(chair.watch || []).slice(0, 3).map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>
+      <div><h3>The vote</h3><ul class="votes" id="votes">${['q','v','r','s'].map(id => `<li style="--seat:${seat(id).color}"><div class="seal">${seat(id).seal}</div><div><b>${seat(id).name}</b><br><span class="vote pending" id="vote-${id}">voting</span></div><span class="note" id="note-${id}"></span></li>`).join('')}</ul>
+      ${chair.dissent_expected ? `<p class="status" style="margin-top:10px">Chair expects: ${esc(chair.dissent_expected)}</p>` : ''}</div></div>
+    <div class="record"><h3>What the record says about ${money(b.amount)} placed this way</h3>
+      <p>The stock part follows the historical spread of a top-10 Ledger basket held one year (${d.n} past start dates, dividends included); the index part follows SPY. Past spread, not a forecast: the basket lost money in ${Math.round(d.lose*100)}% of years and its worst year was ${Math.round(d.worst*100)}%.</p>
+      <table><thead><tr><th>Kind of year</th><th class="r">This portfolio</th><th class="r">All in SPY</th></tr></thead><tbody>${[0,1,2,3,4].map(row).join('')}</tbody></table></div>
+    <div class="actions"><button type="button" class="primary" id="copy">Copy the minutes</button><button type="button" id="again">Convene again</button></div>`;
+  minutes.appendChild(el);
+  $('#copy').onclick = async () => { try { await navigator.clipboard.writeText(minutesText()); $('#copy').textContent = 'Copied'; } catch { $('#copy').textContent = 'Could not copy'; } };
+  $('#again').onclick = () => { $('#go').click(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+  el.scrollIntoView({behavior: 'smooth', block: 'start'});
+  return {pos, idx, cash};
+}
+function setVote(id, v){ const el = $('#vote-' + id); if (!el) return; const ok = String(v.vote).toLowerCase() === 'approve'; el.className = 'vote ' + (ok ? 'approve' : 'dissent'); el.textContent = ok ? 'approve' : 'dissent'; $('#note-' + id).textContent = v.note || ''; }
+function minutesText(){ return [...minutes.querySelectorAll('.memo')].map(m => m.querySelector('.who b').textContent + ':\n' + m.querySelector('.body').textContent).join('\n\n') + '\n\n' + ($('#decision') ? $('#decision').innerText : ''); }
+
+/* ---------- the session ---------- */
+async function convene(){
+  const b = brief(), cands = candidates(b), my = ++session;
+  minutes.innerHTML = '';
+  if (cands.length < b.npos) { minutes.innerHTML = `<p class="empty"><b>Only ${cands.length} candidates pass this brief.</b> Loosen the sector or preference filters, or ask for fewer stocks.</p>`; return; }
+  $('#go').disabled = true; $('#stop').hidden = false; $('#state').textContent = 'in session'; $('#state').classList.add('on');
+  ctl = new AbortController();
+  const memos = {};
+  const speak = async (id, prompt) => {
+    const el = memoCard(id);
+    $('#live').textContent = seat(id).name + ' is writing';
+    try {
+      const { text } = await sample(prompt, { signal: ctl.signal, modelTier: 'default', cache: false, onText: ({ text }) => { if (my === session) setBody(el, text, false); } });
+      setBody(el, text, true); memos[id] = text; return text;
+    } catch (e) { setBody(el, e.text || '', true); fail(el, e); throw e; }
+  };
+  try {
+    await speak('q', PROMPTS.q(b, cands));
+    await speak('v', PROMPTS.v(b, cands, memos));
+    await speak('r', PROMPTS.r(b, cands, memos));
+    await speak('s', PROMPTS.s(b, cands, memos));
+    const el = memoCard('c'); setBody(el, '', false); $('#live').textContent = 'The Chair is writing the allocation';
+    let chair;
+    try { chair = await sample.json(PROMPTS.c(b, cands, memos), { signal: ctl.signal, modelTier: 'default', cache: false }); }
+    catch (e) { fail(el, e); throw e; }
+    setBody(el, chair.summary || 'Allocation below.', true);
+    const fixed = renderDecision(b, chair, false);
+    const chairFixed = {...chair, index_weight: fixed.idx, cash_weight: fixed.cash, positions: fixed.pos};
+    $('#live').textContent = 'The seats are voting';
+    for (const id of ['q','v','r','s']) {
+      try { setVote(id, await sample.json(PROMPTS.vote(id, b, chairFixed), { signal: ctl.signal, modelTier: 'quick', cache: false })); }
+      catch (e) { const v = $('#vote-' + id); if (v) { v.className = 'vote pending'; v.textContent = e.code === 'cancelled' ? 'no vote' : 'no vote'; } if (e.code === 'cancelled') break; }
+    }
+    $('#live').textContent = 'Session complete';
+  } catch (e) {
+    $('#status').className = 'status ' + (e.code === 'cancelled' ? '' : 'bad'); $('#status').textContent = copyFor(e.code);
+  } finally {
+    $('#go').disabled = false; $('#stop').hidden = true; $('#state').textContent = 'adjourned'; $('#state').classList.remove('on');
+    for (const s of SEATS) $('#seat-' + s.id).classList.remove('live');
+  }
+}
+$('#stop').onclick = () => ctl && ctl.abort();
+
+/* ---------- example session (when Claude cannot be reached) ---------- */
+function exampleSession(){
+  const b = brief(), cands = candidates(b);
+  minutes.innerHTML = '';
+  const top = cands.slice(0, 10), f = x => x.toFixed(0);
+  const byQ = [...cands].sort((a, c) => c.quality - a.quality).slice(0, 6), byV = [...cands].sort((a, c) => c.value - a.value).slice(0, 5);
+  const sectorCount = {}; for (const s of top) sectorCount[s.sector] = (sectorCount[s.sector] || 0) + 1;
+  const big = Object.entries(sectorCount).sort((a, c) => c[1] - a[1])[0];
+  const texts = {
+    q: `Strongest businesses on this list, by the filings: ${byQ.map(s => `${s.ticker} (ROE ${f(s.roe)}%, revenue ${pct(s.rev_growth,0,true)})`).join(', ')}. I would refuse ${top.find(s => s.flags.length >= 2)?.ticker || top[top.length-1].ticker} on its flags alone. Value should watch how many of these are priced for perfection: several sit above the top fifth of their own history.`,
+    v: `On price, the shortlist splits. Reasonable against their own past: ${byV.map(s => `${s.ticker} (P/E ${isNum(s.pe) ? s.pe : 'n/a'})`).join(', ')}. Expensive against their own past: ${top.filter(s => isNum(s.pe_pct_5y) && s.pe_pct_5y > 80).slice(0,3).map(s => s.ticker).join(', ') || 'few'}. I would not pay today's price for ${top.reduce((a, s) => (isNum(s.pe) && s.pe > (a.pe||0)) ? s : a, {}).ticker || top[0].ticker}.`,
+    r: `For someone who can only sit through ${b.loss} with ${money(b.amount)}: cap any one sector at 30% of the whole amount and any one stock at 10%. ${big ? `${big[1]} of the top ten are ${big[0]}, so the shortlist as written is one bet, not ten.` : ''} The ${Math.round(b.index*100)}% index share is ${b.index >= 0.5 ? 'appropriate' : 'too low for that loss tolerance; I would raise it'}. Constraint the Chair may not break: no stock flagged very volatile above 5%.`,
+    s: `The record says a top pick beats the index about ${Math.round(DATA.record.per_pick_beat_spy*100)}% of the time, and against the average candidate the edge cannot be told from luck. The two most likely failures are the two with the deepest dips and the richest multiples: a dip is only a bargain if the business stays strong, and the score cannot see that. This beats an index fund only if this year's leaders are next year's, which is exactly what it assumed in January 2022. The Risk Officer's sector cap is the one sound thing here.`,
+  };
+  for (const id of ['q','v','r','s']) { const el = memoCard(id); setBody(el, texts[id], true); }
+  const picks = []; const used = {};
+  for (const s of top) { if (picks.length >= b.npos) break; if ((used[s.sector] || 0) >= 2) continue; used[s.sector] = (used[s.sector] || 0) + 1; picks.push(s); }
+  const room = 1 - b.index, w = room / picks.length;
+  const chair = { summary: `An example allocation built by simple rules, not by the committee: ${Math.round(b.index*100)}% in the index fund, the rest split equally across ${picks.length} of the highest-scoring names with no more than two per sector. Open this page inside the Claude app to convene the real committee.`,
+    index_weight: b.index, cash_weight: 0, positions: picks.map(s => ({ticker: s.ticker, weight: w, why: `Score ${s.score}; ${s.verdict.toLowerCase()}`})),
+    risks: ['The stocks share one sector story more than the count suggests.', 'A strong three-year record is partly last cycle\'s story.', 'Filings lag by months; the news behind a dip is not in these numbers.'],
+    watch: ['Check each earnings date; a report within two weeks can move a stock 10% overnight.', 'Read why each stock fell before deciding the dip is temporary.'], dissent_expected: 'The Skeptic will dissent on the record.' };
+  const el = memoCard('c'); setBody(el, chair.summary, true);
+  renderDecision(b, chair, true);
+  setVote('q', {vote:'approve', note:'Businesses are sound.'}); setVote('v', {vote:'approve', note:'Prices are mixed but acceptable.'}); setVote('r', {vote:'approve', note:'Caps respected.'}); setVote('s', {vote:'dissent', note:'The record says coin flip.'});
+  $('#state').textContent = 'example';
+}
+
+/* ---------- start ---------- */
+(async () => {
+  const has = window.claude && typeof window.claude.use === 'function';
+  sample = has ? await window.claude.use('sample') : null;
+  if (sample) {
+    $('#status').className = 'status'; $('#status').textContent = 'Live. Convening asks once to use your Claude account; a session takes a minute or two.';
+    $('#go').onclick = convene;
+  } else {
+    $('#status').className = 'status warn'; $('#status').textContent = 'This copy of the page cannot reach Claude, so it shows an example session built by simple rules. Open it inside the Claude app for the real committee.';
+    $('#go').textContent = 'Show an example session'; $('#go').onclick = exampleSession;
+  }
+})();
+</script>

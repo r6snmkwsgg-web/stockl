@@ -1,0 +1,387 @@
+<title>Ledger Committee</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#0B1220; --surface:#111B2E; --raised:#18243A; --rule:#26344D; --rule-strong:#3A4B69;
+  --ink:#E8ECF3; --ink-2:#A9B4C6; --ink-3:#6F7C92; --ivory:#E9E2D0; --ivory-2:#C9C1AC;
+  --q:#B8892E; --v:#2FA58F; --r:#D0604A; --s:#8C7FE0; --c:#E9E2D0;
+  --good:#4CBF7A; --bad:#E06666; --warn:#D9A24A;
+  --display:"Bodoni Moda",Didot,"Times New Roman",serif; --body:"Libre Franklin","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; --radius:4px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);font-weight:500;margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:clamp(44px,7vw,84px);letter-spacing:-0.01em;color:var(--ivory)}
+h2{font-size:26px;color:var(--ivory)} h3{font-size:19px;color:var(--ivory)}
+p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ivory);outline-offset:2px}
+a{color:var(--ivory-2)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 32px}
+
+/* masthead */
+.masthead{padding:44px 0 28px;border-bottom:1px solid var(--rule-strong);background:
+  radial-gradient(1200px 380px at 20% -10%,rgba(233,226,208,.07),transparent 60%),var(--ground)}
+.mast{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px 56px;align-items:end}
+.lede{font-family:var(--display);font-size:21px;line-height:1.35;color:var(--ink-2);max-width:32em;margin-top:16px}
+.lede em{color:var(--ivory);font-style:italic}
+.seats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.seat{border-top:2px solid var(--seat);padding:10px 2px 0;min-width:0}
+.seat .seal{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:17px;margin-bottom:8px}
+.seat b{display:block;font-weight:600;font-size:13px;color:var(--ink)}
+.seat span{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.seat.live .seal{box-shadow:0 0 0 4px color-mix(in oklab,var(--seat) 30%,transparent)}
+
+/* layout */
+.room{display:grid;grid-template-columns:360px minmax(0,1fr);gap:36px;padding:32px 0 72px;align-items:start}
+.brief{position:sticky;top:16px;background:var(--surface);border:1px solid var(--rule);padding:22px 22px 20px}
+.brief h2{font-size:22px;margin-bottom:4px}
+.brief .sub{font-size:12.5px;color:var(--ink-3);margin-bottom:16px}
+.field{display:grid;gap:5px;margin-bottom:14px}
+.field label,.field .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.field input[type=number],.field select,.field textarea{background:var(--ground);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:8px 10px;color:var(--ink);width:100%}
+.field textarea{min-height:64px;resize:vertical}
+.field input[type=range]{width:100%;accent-color:var(--ivory)}
+.field .val{font-family:var(--mono);font-size:13px;color:var(--ivory)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--rule-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:transparent;color:var(--ink-2);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--raised);border-color:var(--ivory-2);color:var(--ivory)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink-2);margin:4px 0}
+.check input{margin-top:3px;accent-color:var(--ivory)}
+.cta{width:100%;margin-top:6px;background:var(--ivory);color:var(--ground);border:0;border-radius:var(--radius);padding:12px 14px;font-weight:600;font-size:15px;cursor:pointer}
+.cta:disabled{opacity:.5;cursor:default}
+.cta.secondary{background:transparent;color:var(--ivory);border:1px solid var(--rule-strong);margin-top:8px}
+.status{font-size:12.5px;color:var(--ink-3);margin-top:12px;line-height:1.45}
+.status.warn{color:var(--warn)} .status.bad{color:var(--bad)}
+
+/* minutes */
+.minutes-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--rule-strong);padding-bottom:10px;margin-bottom:8px}
+.minutes-head .state{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.minutes-head .state.on{color:var(--good)}
+.minutes-head .state.on::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:8px;vertical-align:middle;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.minutes-head .state.on::before{animation:none}.memo{animation:none!important}}
+.memo{border-left:2px solid var(--seat);padding:14px 0 18px 20px;margin:18px 0 0;animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.memo .who{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.memo .seal{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:15px;flex:none}
+.memo .who b{font-weight:600;color:var(--ink)}
+.memo .who span{font-size:12px;color:var(--ink-3)}
+.memo .who .t{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.memo .body{white-space:pre-wrap;max-width:68ch;color:var(--ink-2);font-size:15px}
+.memo .body.thinking{color:var(--ink-3);font-style:italic}
+.memo .body.thinking::after{content:"";display:inline-block;width:.6em;height:1em;vertical-align:-.15em;margin-left:2px;border-left:2px solid var(--seat);animation:pulse 1s steps(2) infinite}
+.memo .err{font-size:13px;color:var(--bad);margin-top:6px}
+
+/* decision */
+.decision{margin-top:26px;background:var(--surface);border:1px solid var(--rule-strong);border-top:3px solid var(--ivory);padding:24px 26px 26px;animation:rise .6s ease both}
+.decision .eyebrow{color:var(--ivory-2)}
+.decision h2{margin:6px 0 10px;font-size:30px}
+.decision .summary{font-family:var(--display);font-size:19px;line-height:1.35;color:var(--ink);max-width:36em}
+.alloc{margin:20px 0 6px;display:grid;gap:8px}
+.alloc .bar{display:grid;grid-template-columns:130px 1fr 72px 90px;gap:12px;align-items:center;font-size:13.5px}
+.alloc .bar .lab{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alloc .bar .lab small{display:block;color:var(--ink-3);font-weight:400;font-size:11.5px}
+.alloc .track{height:12px;background:var(--raised);border-radius:3px;overflow:hidden}
+.alloc .fill{height:100%;width:var(--w);background:var(--ink-2);border-radius:3px}
+.alloc .bar.index .fill{background:var(--ivory)}
+.alloc .bar.cash .fill{background:var(--rule-strong)}
+.alloc .pct,.alloc .usd{font-family:var(--mono);text-align:right;color:var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:18px}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--rule-strong)}
+th.r,td.r{text-align:right}
+td{padding:8px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+td .t{font-family:var(--mono);font-weight:500}
+td .n{display:block;font-size:11.5px;color:var(--ink-3)}
+td.why{color:var(--ink-2);max-width:36ch}
+svg.mini{width:70px;height:22px;display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:22px}
+.two h3{margin-bottom:8px}
+.two ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:13.5px} .two li{margin:4px 0}
+.votes{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.votes li{display:grid;grid-template-columns:30px 110px 1fr;gap:10px;align-items:start;font-size:13.5px}
+.votes .seal{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:13px}
+.votes b{font-weight:600}
+.vote{font-family:var(--mono);font-size:12px;padding:1px 8px;border-radius:999px;display:inline-block}
+.vote.approve{background:color-mix(in oklab,var(--good) 22%,transparent);color:var(--good)}
+.vote.dissent{background:color-mix(in oklab,var(--bad) 22%,transparent);color:var(--bad)}
+.vote.pending{background:var(--raised);color:var(--ink-3)}
+.record{margin-top:22px;padding:16px 18px;background:var(--ground);border:1px solid var(--rule)}
+.record h3{font-size:17px;margin-bottom:6px}
+.record p{font-size:13px;color:var(--ink-2);max-width:70ch}
+.record table{margin-top:10px;font-size:13px}
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.actions button{background:transparent;color:var(--ivory);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:9px 14px;cursor:pointer}
+.actions button.primary{background:var(--ivory);color:var(--ground);border-color:var(--ivory)}
+.empty{padding:36px 0 10px;color:var(--ink-3);max-width:60ch;font-size:14.5px}
+.empty b{color:var(--ink-2);font-weight:500}
+.example-tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:999px;padding:2px 9px;margin-bottom:12px}
+.how{max-width:70ch;margin:0 auto;padding:36px 32px 64px;border-top:1px solid var(--rule-strong);color:var(--ink-2);font-size:14.5px}
+.how h2{margin-bottom:10px;font-size:24px} .how p{margin:10px 0} .how ul{padding-left:20px;margin:8px 0} .how li{margin:4px 0}
+footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;margin:0 auto}
+@media (max-width:1000px){.mast,.room{grid-template-columns:1fr}.brief{position:static}.seats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.wrap{padding:0 18px}.alloc .bar{grid-template-columns:96px 1fr 56px 74px;gap:8px}.two{grid-template-columns:1fr}.votes li{grid-template-columns:30px 1fr}.votes li .note{grid-column:2}.how,footer{padding-left:18px;padding-right:18px}}
+</style>
+
+<header class="masthead"><div class="wrap mast">
+  <div>
+    <p class="eyebrow" id="eyebrow">In session &middot; numbers as of &mdash;</p>
+    <h1>Ledger Committee</h1>
+    <p class="lede">Four analysts and a chair sit over the Bargain Ledger&rsquo;s numbers and argue, in front of you, about <em>your</em> money. Each has one job and a reason to disagree. You get the minutes, the allocation, and the vote.</p>
+  </div>
+  <div class="seats" id="seats"></div>
+</div></header>
+
+<main class="wrap room">
+  <aside class="brief" aria-label="Your brief">
+    <h2>The brief</h2>
+    <p class="sub">What the committee is deciding for.</p>
+    <div class="field"><label for="amount">Amount to invest ($)</label><input id="amount" type="number" min="100" step="100" value="3000"></div>
+    <div class="field"><label for="horizon">How long can it stay invested?</label>
+      <select id="horizon"><option value="under a year">Under a year</option><option value="one to three years" selected>One to three years</option><option value="three to ten years">Three to ten years</option><option value="more than ten years">More than ten years</option></select></div>
+    <div class="field"><label for="loss">Worst single year you could sit through without selling</label>
+      <select id="loss"><option value="-10%">Down 10%</option><option value="-20%" selected>Down 20%</option><option value="-35%">Down 35%</option><option value="-50%">Down 50% or more</option></select></div>
+    <div class="field"><div class="row"><label for="npos">Number of individual stocks</label><span class="val" id="nposv">6</span></div><input id="npos" type="range" min="3" max="12" value="6"></div>
+    <div class="field"><div class="row"><label for="index">Share kept in a plain index fund</label><span class="val" id="indexv">50%</span></div><input id="index" type="range" min="0" max="100" step="5" value="50"></div>
+    <div class="field"><span class="lbl">Sectors to avoid</span><div class="chips" id="avoid"></div></div>
+    <div class="field"><span class="lbl">Preferences</span>
+      <label class="check"><input type="checkbox" id="pDiv"> Prefer companies that pay dividends</label>
+      <label class="check"><input type="checkbox" id="pVol" checked> Skip anything flagged very volatile</label>
+      <label class="check"><input type="checkbox" id="pDip"> Only stocks in a fresh pull-back</label>
+      <label class="check"><input type="checkbox" id="pBig" checked> Only today&rsquo;s largest companies (not the fallen list)</label></div>
+    <div class="field"><label for="notes">Anything else the committee should know</label><textarea id="notes" maxlength="400" placeholder="e.g. I already own a lot of Nvidia. I want to understand every pick in one sentence."></textarea></div>
+    <button class="cta" id="go">Convene the committee</button>
+    <button class="cta secondary" id="stop" hidden>Stop the session</button>
+    <p class="status" id="status">Checking whether this page can reach Claude&hellip;</p>
+  </aside>
+
+  <section aria-label="Minutes">
+    <div class="minutes-head"><h2>Minutes</h2><span class="state" id="state">not in session</span></div>
+    <div id="minutes"><p class="empty"><b>Fill in the brief and convene.</b> The Quality Analyst and the Value Analyst read the numbers first, the Risk Officer and the Skeptic answer them, and the Chair writes the allocation. Then every seat votes. It takes a minute or two; the memos appear as they are written.</p></div>
+    <p class="status" id="live" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
+  </section>
+</main>
+
+<section class="how">
+  <h2>How this works, and what it is not</h2>
+  <p>The candidates are the highest-scoring stocks on the Bargain Ledger: real filings, real prices, scored on business quality, price against the company&rsquo;s own history, and the timing of its pull-back. The committee only ever sees those numbers and your brief. It cannot browse, it has no memory between sessions, and every analyst is Claude with a different job and a different instruction to disagree.</p>
+  <ul>
+    <li><b>Quality Analyst</b> judges the businesses: profitability, growth, debt, the three-year record.</li>
+    <li><b>Value Analyst</b> judges the prices: cheap or dear against each company&rsquo;s own past and its peers.</li>
+    <li><b>Risk Officer</b> fits the picks to you: how much you can lose, how long you can wait, how concentrated it is.</li>
+    <li><b>The Skeptic</b> argues against the whole thing, using the record: the top picks beat the index about half the time.</li>
+    <li><b>The Chair</b> writes the allocation and takes the vote.</li>
+  </ul>
+  <p>Running a session spends a small amount of your own Claude usage; the page asks once. Nothing you type is stored. And plainly: this is a study tool that shows you how a disciplined argument over real numbers looks. It is not investment advice, it does not know your taxes or your life, and the record it argues from is a coin flip per stock.</p>
+</section>
+<footer><p id="foot"></p></footer>
+
+<script>
+document.documentElement.lang = 'en';
+const DATA = {"as_of":"2026-09-04","market":{"spy":770.19,"sma200":712.15,"ok":true},"stocks":[{"ticker":"NVDA","name":"Nvidia","sector":"Technology","universe":"top100","rank":1,"score":84.9,"quality":97.0,"value":62.0,"timing":45.0,"verdict":"Strong business, fairly priced, modest pull-back.","price":230.36,"mcap":5551676000000.0,"dip":-2.6,"fresh":false,"days_since_high":78,"above_200":17.1,"pe":35.6,"pe_pct_5y":1.0,"ps":18.32,"fcf_yield":2.3,"earnings_yield":2.8,"roe":84.0,"net_margin":64.0,"rev_growth":83.4,"ni_growth":123.0,"debt_to_equity":0.15,"ret1y":34.0,"ret3y_vs_spy":297.0,"vol60":41.0,"flags":[],"financial":false,"spark":[167.02,187.62,202.49,179.92,187.54,192.51,177.19,167.52,216.61,214.86,199.0,208.76,216.85]},{"ticker":"LLY","name":"Eli Lilly And Company","sector":"Health care","universe":"top100","rank":2,"score":82.2,"quality":92.0,"value":54.0,"timing":71.0,"verdict":"Strong business, fairly priced, in a fresh pull-back.","price":1149.36,"mcap":1081958156228.0,"dip":-11.1,"fresh":true,"days_since_high":12,"above_200":8.1,"pe":40.5,"pe_pct_5y":8.0,"ps":13.58,"fcf_yield":2.6,"earnings_yield":2.5,"roe":79.0,"net_margin":34.0,"rev_growth":49.6,"ni_growth":94.0,"debt_to_equity":1.62,"ret1y":55.0,"ret3y_vs_spy":39.0,"vol60":34.0,"flags":[],"financial":false,"spark":[727.21,839.87,862.86,1057.89,1079.75,1024.14,1051.99,878.24,868.27,1064.74,1117.26,1185.87,1244.4]},{"ticker":"MU","name":"Micron Technology","sector":"Technology","universe":"top100","rank":3,"score":80.3,"quality":93.0,"value":33.0,"timing":87.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":1016.59,"mcap":1148129783375.0,"dip":-19.0,"fresh":true,"days_since_high":50,"above_200":67.6,"pe":24.5,"pe_pct_5y":60.0,"ps":12.72,"fcf_yield":2.3,"earnings_yield":4.1,"roe":50.0,"net_margin":56.0,"rev_growth":167.0,"ni_growth":711.0,"debt_to_equity":0.05,"ret1y":718.0,"ret3y_vs_spy":1322.0,"vol60":97.0,"flags":["very volatile (>60%/yr)"],"financial":false,"spark":[131.37,187.83,223.77,240.46,292.63,435.79,412.37,357.22,524.56,895.88,1048.51,990.21,974.33]},{"ticker":"AVGO","name":"Broadcom","sector":"Technology","universe":"top100","rank":4,"score":78.3,"quality":91.0,"value":28.0,"timing":89.0,"verdict":"Strong business, priced above its norm, well below a high set months ago.","price":357.9,"mcap":1702737952864.0,"dip":-27.7,"fresh":false,"days_since_high":65,"above_200":-3.2,"pe":65.8,"pe_pct_5y":57.0,"ps":22.56,"fcf_yield":1.9,"earnings_yield":1.5,"roe":33.0,"net_margin":39.0,"rev_growth":32.3,"ni_growth":127.0,"debt_to_equity":0.74,"ret1y":17.0,"ret3y_vs_spy":230.0,"vol60":44.0,"flags":["expensive (P/E > 50)"],"financial":false,"spark":[334.89,338.37,369.63,386.08,349.85,330.73,319.55,300.68,418.2,422.01,382.07,392.47,364.03]},{"ticker":"GS","name":"The Goldman Sachs Group","sector":"Financials","universe":"top100","rank":5,"score":74.2,"quality":81.0,"value":52.0,"timing":69.0,"verdict":"Strong business, fairly priced, in a fresh pull-back.","price":1038.61,"mcap":302413536063.0,"dip":-10.0,"fresh":true,"days_since_high":37,"above_200":9.5,"pe":14.4,"pe_pct_5y":61.0,"ps":4.57,"fcf_yield":null,"earnings_yield":6.9,"roe":17.0,"net_margin":32.0,"rev_growth":17.8,"ni_growth":35.0,"debt_to_equity":null,"ret1y":39.0,"ret3y_vs_spy":145.0,"vol60":36.0,"flags":[],"financial":true,"spark":[738.21,789.98,789.37,810.86,884.42,940.12,859.57,802.89,937.81,994.52,1076.91,1074.72,1001.95]},{"ticker":"SCHW","name":"Schwab Charles","sector":"Financials","universe":"top100","rank":6,"score":74.0,"quality":81.0,"value":56.0,"timing":58.0,"verdict":"Strong business, fairly priced, modest pull-back.","price":109.29,"mcap":188999100183.0,"dip":-4.6,"fresh":true,"days_since_high":9,"above_200":12.2,"pe":18.7,"pe_pct_5y":21.0,"ps":7.26,"fcf_yield":null,"earnings_yield":5.3,"roe":20.0,"net_margin":39.0,"rev_growth":20.3,"ni_growth":39.0,"debt_to_equity":0.45,"ret1y":12.0,"ret3y_vs_spy":12.0,"vol60":23.0,"flags":[],"financial":true,"spark":[92.05,94.08,94.52,92.69,100.55,103.47,95.2,92.36,90.76,89.4,91.39,101.61,109.79]},{"ticker":"LRCX","name":"Lam Research","sector":"Technology","universe":"top100","rank":7,"score":73.5,"quality":87.0,"value":14.0,"timing":100.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":307.65,"mcap":384968905650.0,"dip":-29.8,"fresh":true,"days_since_high":47,"above_200":17.9,"pe":59.4,"pe_pct_5y":94.0,"ps":16.57,"fcf_yield":1.3,"earnings_yield":1.7,"roe":58.0,"net_margin":31.0,"rev_growth":26.0,"ni_growth":36.0,"debt_to_equity":0.3,"ret1y":206.0,"ret3y_vs_spy":277.0,"vol60":84.0,"flags":["very volatile (>60%/yr)","expensive (P/E > 50)","priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[102.95,145.81,157.46,154.79,173.78,248.17,233.89,211.41,259.47,322.68,374.8,319.78,310.53]},{"ticker":"ANET","name":"Arista Networks","sector":"Technology","universe":"top100","rank":8,"score":73.2,"quality":91.0,"value":14.0,"timing":69.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":193.78,"mcap":244400112289.0,"dip":-9.8,"fresh":true,"days_since_high":22,"above_200":27.5,"pe":68.0,"pe_pct_5y":96.0,"ps":23.19,"fcf_yield":2.2,"earnings_yield":1.5,"roe":27.0,"net_margin":38.0,"rev_growth":32.6,"ni_growth":24.0,"debt_to_equity":null,"ret1y":37.0,"ret3y_vs_spy":244.0,"vol60":57.0,"flags":["expensive (P/E > 50)","priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[142.85,145.5,157.69,128.11,132.44,148.15,133.5,120.77,172.47,158.01,161.74,176.61,183.75]},{"ticker":"KLAC","name":"KLA","sector":"Technology","universe":"top100","rank":9,"score":72.6,"quality":85.0,"value":15.0,"timing":100.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":185.6,"mcap":242495082925.0,"dip":-39.6,"fresh":true,"days_since_high":47,"above_200":8.2,"pe":50.2,"pe_pct_5y":93.0,"ps":17.86,"fcf_yield":1.6,"earnings_yield":2.0,"roe":76.0,"net_margin":36.0,"rev_growth":11.7,"ni_growth":19.0,"debt_to_equity":0.93,"ret1y":113.0,"ret3y_vs_spy":202.0,"vol60":83.0,"flags":["very volatile (>60%/yr)","expensive (P/E > 50)","priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[90.51,110.16,120.87,115.72,124.36,168.47,152.46,144.32,190.0,201.14,240.48,218.73,185.86]},{"ticker":"EBAY","name":"Ebay","sector":"Technology","universe":"fallen","rank":10,"score":71.3,"quality":80.0,"value":44.0,"timing":67.0,"verdict":"Strong business, priced above its norm, well below a high set months ago.","price":103.41,"mcap":46017450000.0,"dip":-13.3,"fresh":false,"days_since_high":74,"above_200":4.8,"pe":23.6,"pe_pct_5y":71.0,"ps":3.83,"fcf_yield":5.4,"earnings_yield":4.2,"roe":48.0,"net_margin":19.0,"rev_growth":14.7,"ni_growth":2.0,"debt_to_equity":1.1,"ret1y":11.0,"ret3y_vs_spy":60.0,"vol60":33.0,"flags":[],"financial":false,"spark":[92.66,92.17,81.31,82.73,87.1,94.41,90.86,87.98,100.29,115.31,109.45,109.32,104.61]},{"ticker":"GE","name":"GE Aerospace","sector":"Industrials","universe":"top100","rank":11,"score":71.0,"quality":82.0,"value":29.0,"timing":76.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":337.12,"mcap":349783074383.0,"dip":-13.3,"fresh":true,"days_since_high":21,"above_200":4.9,"pe":39.0,"pe_pct_5y":66.0,"ps":6.91,"fcf_yield":2.4,"earnings_yield":2.6,"roe":51.0,"net_margin":18.0,"rev_growth":21.7,"ni_growth":16.0,"debt_to_equity":0.97,"ret1y":19.0,"ret3y_vs_spy":199.0,"vol60":31.0,"flags":[],"financial":false,"spark":[279.23,297.0,308.95,288.45,311.79,298.86,342.26,282.81,284.56,314.49,365.88,349.0,344.64]},{"ticker":"ADI","name":"Analog Devices","sector":"Technology","universe":"top100","rank":12,"score":70.6,"quality":79.0,"value":34.0,"timing":87.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":362.25,"mcap":175533839696.0,"dip":-18.8,"fresh":true,"days_since_high":53,"above_200":4.0,"pe":45.0,"pe_pct_5y":40.0,"ps":12.64,"fcf_yield":2.8,"earnings_yield":2.2,"roe":12.0,"net_margin":30.0,"rev_growth":33.6,"ni_growth":111.0,"debt_to_equity":0.24,"ret1y":47.0,"ret3y_vs_spy":29.0,"vol60":41.0,"flags":[],"financial":false,"spark":[247.07,241.99,234.13,266.51,274.82,318.7,355.79,307.44,392.59,419.94,413.16,380.2,370.24]},{"ticker":"CAT","name":"Caterpillar","sector":"Industrials","universe":"top100","rank":13,"score":70.4,"quality":80.0,"value":23.0,"timing":97.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":813.94,"mcap":374147779153.0,"dip":-24.2,"fresh":true,"days_since_high":47,"above_200":5.3,"pe":36.2,"pe_pct_5y":89.0,"ps":5.01,"fcf_yield":2.9,"earnings_yield":2.8,"roe":56.0,"net_margin":15.0,"rev_growth":18.4,"ni_growth":15.0,"debt_to_equity":1.87,"ret1y":94.0,"ret3y_vs_spy":118.0,"vol60":44.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[423.08,497.85,577.26,568.06,577.39,665.24,742.83,695.4,828.79,908.55,994.45,894.54,815.39]},{"ticker":"ABNB","name":"Airbnb","sector":"Technology","universe":"fallen","rank":14,"score":69.9,"quality":77.0,"value":48.0,"timing":61.0,"verdict":"Strong business, fairly priced, modest pull-back.","price":181.94,"mcap":108618180000.0,"dip":-6.0,"fresh":true,"days_since_high":9,"above_200":30.5,"pe":50.2,"pe_pct_5y":41.0,"ps":8.25,"fcf_yield":4.5,"earnings_yield":2.0,"roe":35.0,"net_margin":20.0,"rev_growth":13.6,"ni_growth":3.0,"debt_to_equity":0.32,"ret1y":45.0,"ret3y_vs_spy":-31.0,"vol60":45.0,"flags":["expensive (P/E > 50)"],"financial":false,"spark":[123.81,120.22,126.54,118.8,136.91,131.77,135.11,122.87,141.06,132.68,144.4,137.57,185.0]},{"ticker":"MS","name":"Morgan Stanley","sector":"Financials","universe":"top100","rank":15,"score":69.7,"quality":78.0,"value":44.0,"timing":62.0,"verdict":"Strong business, priced above its norm, modest pull-back.","price":217.72,"mcap":341943693094.0,"dip":-6.3,"fresh":true,"days_since_high":37,"above_200":14.0,"pe":17.0,"pe_pct_5y":79.0,"ps":4.38,"fcf_yield":null,"earnings_yield":5.9,"roe":17.0,"net_margin":26.0,"rev_growth":18.0,"ni_growth":37.0,"debt_to_equity":3.29,"ret1y":45.0,"ret3y_vs_spy":85.0,"vol60":29.0,"flags":[],"financial":true,"spark":[148.09,157.59,164.0,168.47,179.08,182.4,166.51,158.39,190.18,201.76,219.86,215.18,207.45]},{"ticker":"AAPL","name":"Apple","sector":"Technology","universe":"top100","rank":16,"score":69.0,"quality":84.0,"value":21.0,"timing":63.0,"verdict":"Strong business, priced above its norm, modest pull-back.","price":319.97,"mcap":4669699774600.0,"dip":-7.1,"fresh":true,"days_since_high":27,"above_200":12.7,"pe":38.2,"pe_pct_5y":90.0,"ps":10.0,"fcf_yield":2.9,"earnings_yield":2.6,"roe":120.0,"net_margin":28.0,"rev_growth":14.2,"ni_growth":30.0,"debt_to_equity":0.77,"ret1y":33.0,"ret3y_vs_spy":-0.0,"vol60":32.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[239.69,258.02,270.37,283.1,273.08,258.28,264.18,248.8,267.61,308.33,293.08,321.66,311.3]},{"ticker":"JPM","name":"JPMorgan Chase","sector":"Financials","universe":"top100","rank":17,"score":69.0,"quality":79.0,"value":43.0,"timing":53.0,"verdict":"Strong business, priced above its norm, modest pull-back.","price":358.64,"mcap":953331896975.0,"dip":-2.1,"fresh":true,"days_since_high":16,"above_200":12.7,"pe":14.7,"pe_pct_5y":90.0,"ps":4.78,"fcf_yield":null,"earnings_yield":6.8,"roe":17.0,"net_margin":33.0,"rev_growth":13.5,"ni_growth":15.0,"debt_to_equity":null,"ret1y":18.0,"ret3y_vs_spy":71.0,"vol60":20.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":true,"spark":[294.38,310.03,311.12,308.92,323.42,306.42,300.3,282.84,311.63,306.74,333.45,349.9,351.55]},{"ticker":"PM","name":"Philip Morris International","sector":"Consumer","universe":"top100","rank":18,"score":68.8,"quality":77.0,"value":37.0,"timing":73.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":182.53,"mcap":284493711021.0,"dip":-12.1,"fresh":true,"days_since_high":28,"above_200":4.7,"pe":26.2,"pe_pct_5y":77.0,"ps":6.69,"fcf_yield":4.5,"earnings_yield":3.8,"roe":null,"net_margin":26.0,"rev_growth":8.9,"ni_growth":32.0,"debt_to_equity":null,"ret1y":13.0,"ret3y_vs_spy":18.0,"vol60":29.0,"flags":[],"financial":false,"spark":[161.55,153.27,144.33,156.15,161.95,177.89,186.83,163.54,160.9,181.53,178.78,191.12,191.52]},{"ticker":"AXP","name":"American Express","sector":"Financials","universe":"top100","rank":19,"score":68.2,"quality":75.0,"value":46.0,"timing":65.0,"verdict":"Strong business, fairly priced, well below a high set months ago.","price":326.16,"mcap":220259055131.0,"dip":-15.8,"fresh":false,"days_since_high":182,"above_200":-3.2,"pe":19.2,"pe_pct_5y":65.0,"ps":5.11,"fcf_yield":null,"earnings_yield":5.2,"roe":33.0,"net_margin":27.0,"rev_growth":8.8,"ni_growth":13.0,"debt_to_equity":1.66,"ret1y":-1.0,"ret3y_vs_spy":33.0,"vol60":25.0,"flags":[],"financial":true,"spark":[326.22,330.24,360.73,360.31,373.39,358.5,308.9,292.27,318.84,310.72,342.56,340.84,331.15]},{"ticker":"D","name":"Dominion Energy","sector":"Utilities & real estate","universe":"fallen","rank":20,"score":68.1,"quality":67.0,"value":72.0,"timing":69.0,"verdict":"Strong business, priced well below its norm, in a fresh pull-back.","price":65.84,"mcap":57903343734.0,"dip":-9.8,"fresh":true,"days_since_high":35,"above_200":2.7,"pe":19.5,"pe_pct_5y":15.0,"ps":3.32,"fcf_yield":8.7,"earnings_yield":5.1,"roe":10.0,"net_margin":17.0,"rev_growth":17.1,"ni_growth":42.0,"debt_to_equity":1.55,"ret1y":12.0,"ret3y_vs_spy":-38.0,"vol60":15.0,"flags":[],"financial":false,"spark":[58.19,61.53,58.69,60.8,59.06,60.83,63.14,60.88,62.5,67.28,69.26,71.46,67.47]},{"ticker":"TXN","name":"Texas Instruments","sector":"Technology","universe":"top100","rank":21,"score":67.6,"quality":77.0,"value":20.0,"timing":94.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":258.44,"mcap":236019731970.0,"dip":-22.6,"fresh":true,"days_since_high":53,"above_200":8.0,"pe":41.2,"pe_pct_5y":86.0,"ps":12.13,"fcf_yield":2.3,"earnings_yield":2.4,"roe":34.0,"net_margin":31.0,"rev_growth":16.7,"ni_growth":20.0,"debt_to_equity":0.78,"ret1y":38.0,"ret3y_vs_spy":-18.0,"vol60":47.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[187.93,180.32,161.46,168.16,175.42,218.97,212.11,190.33,269.5,324.89,303.11,284.99,265.6]},{"ticker":"DDOG","name":"Datadog","sector":"Technology","universe":"fallen","rank":22,"score":66.6,"quality":74.0,"value":25.0,"timing":100.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":212.93,"mcap":79001927390.0,"dip":-27.3,"fresh":true,"days_since_high":22,"above_200":20.7,"pe":6124.2,"pe_pct_5y":null,"ps":19.92,"fcf_yield":1.5,"earnings_yield":0.0,"roe":4.0,"net_margin":4.0,"rev_growth":31.5,"ni_growth":43.0,"debt_to_equity":null,"ret1y":62.0,"ret3y_vs_spy":55.0,"vol60":69.0,"flags":["profit boosted by one-off gains","very volatile (>60%/yr)","expensive (P/E > 50)"],"financial":false,"spark":[136.08,151.82,162.81,157.9,137.48,128.18,111.96,114.48,132.66,223.65,222.65,244.39,232.55]},{"ticker":"BAC","name":"Bank of America","sector":"Financials","universe":"top100","rank":23,"score":66.4,"quality":72.0,"value":52.0,"timing":57.0,"verdict":"Strong business, fairly priced, modest pull-back.","price":62.68,"mcap":438305467518.0,"dip":-3.9,"fresh":true,"days_since_high":14,"above_200":14.2,"pe":13.0,"pe_pct_5y":78.0,"ps":3.62,"fcf_yield":null,"earnings_yield":7.7,"roe":11.0,"net_margin":28.0,"rev_growth":15.9,"ni_growth":20.0,"debt_to_equity":1.13,"ret1y":24.0,"ret3y_vs_spy":45.0,"vol60":18.0,"flags":[],"financial":true,"spark":[49.77,50.64,53.45,53.24,55.28,53.08,49.83,46.97,52.63,52.2,57.73,61.28,61.86]},{"ticker":"PLTR","name":"Palantir Technologies","sector":"Technology","universe":"top100","rank":24,"score":66.3,"quality":74.0,"value":38.0,"timing":72.0,"verdict":"Strong business, priced above its norm, well below a high set months ago.","price":174.33,"mcap":418897034010.0,"dip":-16.0,"fresh":false,"days_since_high":210,"above_200":15.2,"pe":201.3,"pe_pct_5y":6.0,"ps":68.05,"fcf_yield":0.8,"earnings_yield":0.5,"roe":31.0,"net_margin":49.0,"rev_growth":78.9,"ni_growth":295.0,"debt_to_equity":null,"ret1y":12.0,"ret3y_vs_spy":897.0,"vol60":77.0,"flags":["very volatile (>60%/yr)","expensive (P/E > 50)"],"financial":false,"spark":[153.11,173.07,200.47,167.49,180.84,151.86,137.19,143.06,143.1,136.6,113.5,123.37,173.96]},{"ticker":"GOOGL","name":"Alphabet","sector":"Communication","universe":"top100","rank":25,"score":66.0,"quality":76.0,"value":25.0,"timing":74.0,"verdict":"Strong business, priced above its norm, well below a high set months ago.","price":338.46,"mcap":4139365800000.0,"dip":-17.2,"fresh":false,"days_since_high":76,"above_200":0.7,"pe":35.5,"pe_pct_5y":82.0,"ps":9.28,"fcf_yield":1.3,"earnings_yield":2.8,"roe":38.0,"net_margin":55.0,"rev_growth":20.1,"ni_growth":111.0,"debt_to_equity":0.16,"ret1y":46.0,"ret3y_vs_spy":78.0,"vol60":37.0,"flags":["profit boosted by one-off gains","priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[235.0,245.35,281.19,314.89,313.85,338.25,311.76,274.34,350.34,388.88,345.29,317.69,340.67]},{"ticker":"ZM","name":"Zoom Communications","sector":"Technology","universe":"fallen","rank":26,"score":65.7,"quality":69.0,"value":56.0,"timing":63.0,"verdict":"Strong business, fairly priced, modest pull-back.","price":101.33,"mcap":30373296835.0,"dip":-11.7,"fresh":false,"days_since_high":67,"above_200":12.1,"pe":32.4,"pe_pct_5y":16.0,"ps":6.08,"fcf_yield":6.3,"earnings_yield":3.1,"roe":29.0,"net_margin":65.0,"rev_growth":5.0,"ni_growth":174.0,"debt_to_equity":null,"ret1y":22.0,"ret3y_vs_spy":-23.0,"vol60":44.0,"flags":["profit boosted by one-off gains"],"financial":false,"spark":[83.68,80.96,87.23,84.94,86.3,92.58,73.94,77.71,90.83,100.09,85.47,84.11,106.3]},{"ticker":"QCOM","name":"Qualcomm","sector":"Technology","universe":"top100","rank":27,"score":65.5,"quality":63.0,"value":58.0,"timing":100.0,"verdict":"Decent business, fairly priced, well below a high set months ago.","price":168.74,"mcap":177177000000.0,"dip":-35.1,"fresh":false,"days_since_high":68,"above_200":0.5,"pe":21.9,"pe_pct_5y":57.0,"ps":4.02,"fcf_yield":5.9,"earnings_yield":4.6,"roe":33.0,"net_margin":21.0,"rev_growth":1.9,"ni_growth":-20.0,"debt_to_equity":0.61,"ret1y":6.0,"ret3y_vs_spy":-22.0,"vol60":50.0,"flags":[],"financial":false,"spark":[159.84,169.18,180.9,168.04,173.65,152.22,142.36,127.11,150.26,248.82,197.41,171.11,160.74]},{"ticker":"AMD","name":"AMD","sector":"Technology","universe":"top100","rank":28,"score":65.4,"quality":75.0,"value":21.0,"timing":86.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":477.57,"mcap":779621105808.0,"dip":-18.3,"fresh":true,"days_since_high":47,"above_200":40.1,"pe":152.1,"pe_pct_5y":56.0,"ps":18.87,"fcf_yield":1.1,"earnings_yield":0.7,"roe":10.0,"net_margin":16.0,"rev_growth":39.5,"ni_growth":127.0,"debt_to_equity":0.05,"ret1y":195.0,"ret3y_vs_spy":277.0,"vol60":72.0,"flags":["very volatile (>60%/yr)","expensive (P/E > 50)"],"financial":false,"spark":[151.14,164.67,256.12,219.76,215.34,252.18,200.21,201.99,334.63,503.89,519.74,539.69,469.46]},{"ticker":"ABBV","name":"Abbvie","sector":"Health care","universe":"top100","rank":29,"score":64.6,"quality":77.0,"value":25.0,"timing":57.0,"verdict":"Strong business, priced above its norm, modest pull-back.","price":256.46,"mcap":453194898911.0,"dip":-4.1,"fresh":true,"days_since_high":27,"above_200":12.3,"pe":71.8,"pe_pct_5y":70.0,"ps":7.04,"fcf_yield":4.0,"earnings_yield":1.4,"roe":null,"net_margin":10.0,"rev_growth":10.4,"ni_growth":68.0,"debt_to_equity":null,"ret1y":20.0,"ret3y_vs_spy":2.0,"vol60":29.0,"flags":["expensive (P/E > 50)"],"financial":false,"spark":[212.56,233.91,218.04,225.11,229.74,220.43,232.08,209.4,197.38,213.12,234.89,256.92,261.83]},{"ticker":"AMAT","name":"Applied Materials","sector":"Technology","universe":"top100","rank":30,"score":64.0,"quality":73.0,"value":16.0,"timing":100.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":454.71,"mcap":360856693307.0,"dip":-38.5,"fresh":true,"days_since_high":47,"above_200":11.7,"pe":50.0,"pe_pct_5y":93.0,"ps":11.7,"fcf_yield":1.6,"earnings_yield":2.0,"roe":36.0,"net_margin":30.0,"rev_growth":7.8,"ni_growth":36.0,"debt_to_equity":0.25,"ret1y":187.0,"ret3y_vs_spy":130.0,"vol60":82.0,"flags":["very volatile (>60%/yr)","priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[162.75,217.53,233.1,254.75,259.97,341.34,372.3,337.17,404.86,454.89,588.97,562.8,496.21]},{"ticker":"MO","name":"Altria Group","sector":"Consumer","universe":"fallen","rank":31,"score":63.8,"quality":66.0,"value":53.0,"timing":70.0,"verdict":"Strong business, fairly priced, in a fresh pull-back.","price":68.88,"mcap":115011961623.0,"dip":-10.6,"fresh":true,"days_since_high":28,"above_200":3.8,"pe":14.4,"pe_pct_5y":58.0,"ps":4.9,"fcf_yield":7.9,"earnings_yield":6.9,"roe":null,"net_margin":34.0,"rev_growth":-0.6,"ni_growth":-9.0,"debt_to_equity":null,"ret1y":3.0,"ret3y_vs_spy":-16.0,"vol60":33.0,"flags":[],"financial":false,"spark":[66.55,65.73,56.38,59.14,57.77,59.76,69.04,66.48,66.0,72.37,72.07,72.08,66.94]},{"ticker":"PANW","name":"Palo Alto Networks","sector":"Technology","universe":"top100","rank":32,"score":63.5,"quality":75.0,"value":14.0,"timing":82.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":333.26,"mcap":271606900000.0,"dip":-16.5,"fresh":true,"days_since_high":16,"above_200":43.0,"pe":337.0,"pe_pct_5y":81.0,"ps":25.61,"fcf_yield":1.4,"earnings_yield":0.3,"roe":3.0,"net_margin":8.0,"rev_growth":19.5,"ni_growth":-32.0,"debt_to_equity":null,"ret1y":73.0,"ret3y_vs_spy":109.0,"vol60":58.0,"flags":["profit shrinking >25%","expensive (P/E > 50)","priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[194.46,207.19,220.24,187.73,186.85,176.2,148.92,147.02,182.9,256.75,285.26,325.63,349.56]},{"ticker":"NEE","name":"Nextera Energy","sector":"Utilities & real estate","universe":"top100","rank":33,"score":63.4,"quality":65.0,"value":60.0,"timing":61.0,"verdict":"Decent business, fairly priced, modest pull-back.","price":83.43,"mcap":173980037674.0,"dip":-15.5,"fresh":false,"days_since_high":87,"above_200":-5.0,"pe":26.8,"pe_pct_5y":44.0,"ps":6.72,"fcf_yield":7.1,"earnings_yield":3.7,"roe":15.0,"net_margin":32.0,"rev_growth":7.5,"ni_growth":49.0,"debt_to_equity":1.77,"ret1y":18.0,"ret3y_vs_spy":-46.0,"vol60":15.0,"flags":[],"financial":false,"spark":[70.9,80.06,81.4,84.65,80.53,88.18,93.77,91.4,94.83,87.65,87.62,89.79,85.03]},{"ticker":"CB","name":"Chubb Limited","sector":"Financials","universe":"top100","rank":34,"score":62.8,"quality":63.0,"value":63.0,"timing":62.0,"verdict":"Decent business, fairly priced, modest pull-back.","price":341.59,"mcap":132489133609.0,"dip":-6.6,"fresh":true,"days_since_high":27,"above_200":4.7,"pe":11.7,"pe_pct_5y":46.0,"ps":2.18,"fcf_yield":null,"earnings_yield":8.5,"roe":15.0,"net_margin":19.0,"rev_growth":8.2,"ni_growth":34.0,"debt_to_equity":0.22,"ret1y":22.0,"ret3y_vs_spy":-1.0,"vol60":24.0,"flags":[],"financial":true,"spark":[277.38,283.96,276.94,293.88,314.14,306.17,340.86,319.09,324.6,325.45,335.15,353.25,342.87]},{"ticker":"CSCO","name":"Cisco Systems","sector":"Technology","universe":"top100","rank":35,"score":62.8,"quality":73.0,"value":23.0,"timing":72.0,"verdict":"Strong business, priced above its norm, well below a high set months ago.","price":109.2,"mcap":430530486532.0,"dip":-16.2,"fresh":false,"days_since_high":64,"above_200":15.2,"pe":35.5,"pe_pct_5y":94.0,"ps":6.8,"fcf_yield":3.0,"earnings_yield":2.8,"roe":26.0,"net_margin":21.0,"rev_growth":11.8,"ni_growth":30.0,"debt_to_equity":0.45,"ret1y":61.0,"ret3y_vs_spy":21.0,"vol60":34.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[66.9,67.92,73.11,76.04,77.41,78.43,79.46,79.92,88.26,118.33,119.73,112.76,109.59]},{"ticker":"ADBE","name":"Adobe","sector":"Technology","universe":"top100","rank":36,"score":62.6,"quality":50.0,"value":89.0,"timing":95.0,"verdict":"Decent business, priced well below its norm, well below a high set months ago.","price":266.51,"mcap":105937725000.0,"dip":-28.1,"fresh":false,"days_since_high":242,"above_200":-0.5,"pe":14.8,"pe_pct_5y":8.0,"ps":4.2,"fcf_yield":9.7,"earnings_yield":6.8,"roe":63.0,"net_margin":29.0,"rev_growth":11.5,"ni_growth":5.0,"debt_to_equity":0.42,"ret1y":-23.0,"ret3y_vs_spy":-122.0,"vol60":51.0,"flags":[],"financial":false,"spark":[348.97,346.74,340.31,322.85,352.51,291.65,262.41,234.84,239.31,240.49,196.57,212.17,272.22]},{"ticker":"TWLO","name":"Twilio","sector":"Technology","universe":"fallen","rank":37,"score":62.4,"quality":73.0,"value":22.0,"timing":69.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":232.98,"mcap":35779954756.0,"dip":-9.8,"fresh":true,"days_since_high":18,"above_200":42.7,"pe":156.2,"pe_pct_5y":null,"ps":6.42,"fcf_yield":3.0,"earnings_yield":0.6,"roe":13.0,"net_margin":21.0,"rev_growth":17.8,"ni_growth":5574.0,"debt_to_equity":0.11,"ret1y":120.0,"ret3y_vs_spy":205.0,"vol60":62.0,"flags":["profit boosted by one-off gains","very volatile (>60%/yr)","expensive (P/E > 50)"],"financial":false,"spark":[108.67,102.94,134.88,127.56,144.14,123.72,120.96,119.99,142.59,189.65,188.34,185.06,219.89]},{"ticker":"TJX","name":"TJX","sector":"Consumer","universe":"top100","rank":38,"score":62.2,"quality":63.0,"value":59.0,"timing":64.0,"verdict":"Decent business, fairly priced, modest pull-back.","price":132.08,"mcap":145284573977.0,"dip":-22.3,"fresh":true,"days_since_high":59,"above_200":-14.6,"pe":23.9,"pe_pct_5y":13.0,"ps":2.33,"fcf_yield":4.0,"earnings_yield":4.2,"roe":57.0,"net_margin":10.0,"rev_growth":7.7,"ni_growth":22.0,"debt_to_equity":0.27,"ret1y":-6.0,"ret3y_vs_spy":-27.0,"vol60":24.0,"flags":[],"financial":false,"spark":[139.26,141.33,140.14,151.13,155.35,147.47,161.66,155.12,157.48,158.97,165.17,153.48,140.69]},{"ticker":"CRWD","name":"Crowdstrike Holdings","sector":"Technology","universe":"fallen","rank":39,"score":62.1,"quality":76.0,"value":12.0,"timing":67.0,"verdict":"Strong business, priced above its norm, in a fresh pull-back.","price":213.1,"mcap":218200514830.0,"dip":-8.9,"fresh":true,"days_since_high":4,"above_200":49.6,"pe":null,"pe_pct_5y":null,"ps":40.44,"fcf_yield":0.7,"earnings_yield":-0.0,"roe":1.0,"net_margin":1.0,"rev_growth":24.3,"ni_growth":null,"debt_to_equity":0.15,"ret1y":107.0,"ret3y_vs_spy":401.0,"vol60":67.0,"flags":["profit boosted by one-off gains","very volatile (>60%/yr)"],"financial":false,"spark":[104.41,122.47,135.75,126.03,118.91,111.16,93.0,92.39,113.65,167.89,168.25,183.42,190.34]},{"ticker":"AFRM","name":"Affirm Holdings","sector":"Technology","universe":"fallen","rank":40,"score":61.8,"quality":65.0,"value":39.0,"timing":85.0,"verdict":"Strong business, priced above its norm, well below a high set months ago.","price":72.35,"mcap":25184807893.0,"dip":-22.4,"fresh":false,"days_since_high":251,"above_200":8.8,"pe":76.5,"pe_pct_5y":null,"ps":5.91,"fcf_yield":3.9,"earnings_yield":1.3,"roe":35.0,"net_margin":45.0,"rev_growth":32.2,"ni_growth":3598.0,"debt_to_equity":1.79,"ret1y":-19.0,"ret3y_vs_spy":190.0,"vol60":54.0,"flags":["profit boosted by one-off gains","expensive (P/E > 50)"],"financial":false,"spark":[87.35,74.83,71.88,69.06,75.85,62.8,46.98,42.53,65.13,69.27,77.66,71.21,75.05]},{"ticker":"BMY","name":"Bristol-Myers Squibb Company","sector":"Health care","universe":"top100","rank":41,"score":61.6,"quality":59.0,"value":73.0,"timing":54.0,"verdict":"Decent business, priced well below its norm, modest pull-back.","price":66.82,"mcap":136494193314.0,"dip":-2.7,"fresh":true,"days_since_high":12,"above_200":14.9,"pe":14.7,"pe_pct_5y":16.0,"ps":2.78,"fcf_yield":8.4,"earnings_yield":6.8,"roe":42.0,"net_margin":19.0,"rev_growth":3.1,"ni_growth":84.0,"debt_to_equity":1.92,"ret1y":43.0,"ret3y_vs_spy":-64.0,"vol60":28.0,"flags":[],"financial":false,"spark":[47.14,45.45,46.07,49.18,54.21,54.28,62.37,58.54,57.78,58.03,55.0,61.51,65.47]},{"ticker":"DAL","name":"Delta Air Lines","sector":"Industrials","universe":"fallen","rank":42,"score":61.6,"quality":61.0,"value":53.0,"timing":81.0,"verdict":"Decent business, fairly priced, in a fresh pull-back.","price":80.17,"mcap":52721638315.0,"dip":-16.2,"fresh":true,"days_since_high":45,"above_200":8.1,"pe":13.3,"pe_pct_5y":69.0,"ps":0.77,"fcf_yield":6.9,"earnings_yield":7.5,"roe":18.0,"net_margin":6.0,"rev_growth":10.3,"ni_growth":-12.0,"debt_to_equity":0.59,"ret1y":32.0,"ret3y_vs_spy":15.0,"vol60":34.0,"flags":[],"financial":false,"spark":[61.18,57.26,57.38,64.15,69.34,66.54,65.7,64.83,68.2,79.39,90.65,81.97,81.06]},{"ticker":"VRTX","name":"Vertex Pharmaceuticals Inc / Ma","sector":"Health care","universe":"top100","rank":43,"score":61.4,"quality":73.0,"value":25.0,"timing":54.0,"verdict":"Strong business, priced above its norm, modest pull-back.","price":546.12,"mcap":138420079815.0,"dip":-2.5,"fresh":true,"days_since_high":1,"above_200":17.2,"pe":36.7,"pe_pct_5y":90.0,"ps":11.0,"fcf_yield":2.7,"earnings_yield":2.7,"roe":22.0,"net_margin":35.0,"rev_growth":10.2,"ni_growth":21.0,"debt_to_equity":null,"ret1y":38.0,"ret3y_vs_spy":-15.0,"vol60":30.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[396.12,403.3,425.57,425.6,453.74,475.68,496.83,433.07,426.01,435.93,475.2,473.09,540.26]},{"ticker":"NFLX","name":"Netflix","sector":"Communication","universe":"top100","rank":44,"score":61.3,"quality":59.0,"value":60.0,"timing":80.0,"verdict":"Decent business, fairly priced, well below a high set months ago.","price":78.25,"mcap":325828279647.0,"dip":-38.2,"fresh":false,"days_since_high":251,"above_200":-9.9,"pe":28.7,"pe_pct_5y":15.0,"ps":6.74,"fcf_yield":3.4,"earnings_yield":3.5,"roe":45.0,"net_margin":28.0,"rev_growth":16.0,"ni_growth":33.0,"debt_to_equity":0.47,"ret1y":-38.0,"ret3y_vs_spy":9.0,"vol60":38.0,"flags":[],"financial":false,"spark":[124.38,115.33,111.89,109.13,93.78,83.16,96.24,93.43,91.37,87.68,71.84,68.89,80.14]},{"ticker":"WFC","name":"Wells Fargo","sector":"Financials","universe":"top100","rank":45,"score":61.2,"quality":64.0,"value":54.0,"timing":56.0,"verdict":"Decent business, fairly priced, modest pull-back.","price":89.97,"mcap":272069220260.0,"dip":-8.0,"fresh":false,"days_since_high":168,"above_200":5.9,"pe":12.0,"pe_pct_5y":72.0,"ps":3.13,"fcf_yield":null,"earnings_yield":8.3,"roe":13.0,"net_margin":26.0,"rev_growth":6.2,"ni_growth":10.0,"debt_to_equity":1.01,"ret1y":10.0,"ret3y_vs_spy":46.0,"vol60":23.0,"flags":[],"financial":true,"spark":[78.96,80.67,86.97,85.4,94.31,90.64,81.45,77.19,80.56,77.52,84.3,86.19,83.7]},{"ticker":"UBER","name":"Uber Technologies","sector":"Technology","universe":"top100","rank":46,"score":61.0,"quality":54.0,"value":71.0,"timing":90.0,"verdict":"Decent business, priced well below its norm, well below a high set months ago.","price":75.76,"mcap":154744354767.0,"dip":-25.7,"fresh":false,"days_since_high":240,"above_200":-0.7,"pe":29.2,"pe_pct_5y":4.0,"ps":2.8,"fcf_yield":6.5,"earnings_yield":3.4,"roe":35.0,"net_margin":17.0,"rev_growth":16.7,"ni_growth":-24.0,"debt_to_equity":0.47,"ret1y":-18.0,"ret3y_vs_spy":-8.0,"vol60":42.0,"flags":["profit boosted by one-off gains"],"financial":false,"spark":[90.99,96.6,96.5,86.57,82.12,81.7,75.42,69.18,76.27,70.12,73.85,68.91,78.55]},{"ticker":"BKNG","name":"Booking Holdings","sector":"Consumer","universe":"top100","rank":47,"score":60.9,"quality":54.0,"value":82.0,"timing":69.0,"verdict":"Decent business, priced well below its norm, well below a high set months ago.","price":193.29,"mcap":145234336845.0,"dip":-14.5,"fresh":false,"days_since_high":251,"above_200":4.0,"pe":20.1,"pe_pct_5y":1.0,"ps":5.14,"fcf_yield":6.6,"earnings_yield":5.0,"roe":null,"net_margin":26.0,"rev_growth":12.9,"ni_growth":50.0,"debt_to_equity":null,"ret1y":-13.0,"ret3y_vs_spy":-16.0,"vol60":41.0,"flags":[],"financial":false,"spark":[220.23,216.72,203.11,195.67,217.09,204.53,169.57,162.49,177.52,163.3,181.25,172.83,209.87]},{"ticker":"COP","name":"Conocophillips","sector":"Energy & materials","universe":"top100","rank":48,"score":60.6,"quality":64.0,"value":52.0,"timing":54.0,"verdict":"Decent business, fairly priced, modest pull-back.","price":134.26,"mcap":161291569931.0,"dip":-2.3,"fresh":true,"days_since_high":1,"above_200":19.1,"pe":17.4,"pe_pct_5y":82.0,"ps":2.55,"fcf_yield":13.6,"earnings_yield":5.8,"roe":14.0,"net_margin":15.0,"rev_growth":9.6,"ni_growth":1.0,"debt_to_equity":0.35,"ret1y":40.0,"ret3y_vs_spy":-58.0,"vol60":31.0,"flags":["priced above its 5-year norm (P/E top 20%)"],"financial":false,"spark":[92.95,94.16,88.86,90.26,94.1,102.8,113.46,133.8,121.68,116.57,106.92,120.2,134.89]}],"sectors":["Communication","Consumer","Energy & materials","Financials","Health care","Industrials","Technology","Utilities & real estate"],"dist":{"quantiles":[0.1,0.25,0.5,0.75,0.9],"basket":[-0.12084326297826259,0.03905971830988267,0.19591310633306142,0.3671037362041908,0.48737452786493596],"spy":[-0.07468971476040122,0.07910840438546167,0.16346549710014144,0.22171417619660339,0.3071489561425924],"beat":0.54,"lose":0.18,"n":50,"worst":-0.26742252302741265,"best":0.5979320427792654},"record":{"per_pick_beat_spy":0.514,"per_pick_vs_spy":0.03793525487522382,"per_pick_vs_avg":0.016386564024526422,"basket_cagr":0.2089360886199978,"spy_cagr":0.1428608844660273,"basket_maxdd":-0.28619050121195677,"spy_maxdd":-0.23785708279569495,"quarters_beat":0.6,"edge_vs_avg":{"n":50,"mean":0.013970520201308033,"t":1.4043363822006567,"ci90":[-0.0019985374265159774,0.030206527947524736],"share_positive":0.54},"fallen_beat":0.28888888888888886,"first":"2012-01-03","last":"2025-07-01"},"counts":{"scanned":183,"eligible":144,"top100":99,"fallen":84}};
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isNum = v => typeof v === 'number' && isFinite(v);
+const money = v => '$' + Math.round(v).toLocaleString('en-US');
+const pct = (v, d=0, sign=false) => !isNum(v) ? '\u2014' : ((sign && v > 0) ? '+' : '') + v.toFixed(d) + '%';
+const SEATS = [
+  {id:'q', name:'Quality Analyst', job:'Is it a good business?', color:'var(--q)', seal:'Q'},
+  {id:'v', name:'Value Analyst', job:'Is the price low?', color:'var(--v)', seal:'V'},
+  {id:'r', name:'Risk Officer', job:'Does it fit this person?', color:'var(--r)', seal:'R'},
+  {id:'s', name:'The Skeptic', job:'Why this will fail', color:'var(--s)', seal:'S'},
+  {id:'c', name:'The Chair', job:'Writes the allocation', color:'var(--c)', seal:'C'},
+];
+const seat = id => SEATS.find(s => s.id === id);
+$('#eyebrow').innerHTML = `In session &middot; numbers as of ${esc(DATA.as_of)} &middot; SPY ${DATA.market.ok ? 'above' : 'below'} its 200-day average`;
+$('#seats').innerHTML = SEATS.map(s => `<div class="seat" id="seat-${s.id}" style="--seat:${s.color}"><div class="seal">${s.seal}</div><b>${s.name}</b><span>${s.job}</span></div>`).join('');
+$('#foot').textContent = `Candidates: the ${DATA.stocks.length} highest-scoring stocks on the Bargain Ledger as of ${DATA.as_of}. Record: point-in-time test ${DATA.record.first || ''} to ${DATA.record.last || ''}. Not investment advice.`;
+for (const s of DATA.sectors) { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = s; b.setAttribute('aria-pressed', 'false'); b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); $('#avoid').appendChild(b); }
+$('#npos').oninput = e => $('#nposv').textContent = e.target.value;
+$('#index').oninput = e => $('#indexv').textContent = e.target.value + '%';
+
+/* ---------- the brief ---------- */
+function brief(){
+  const avoid = [...document.querySelectorAll('#avoid .chip[aria-pressed="true"]')].map(b => b.textContent);
+  return {
+    amount: Math.max(100, +$('#amount').value || 3000), horizon: $('#horizon').value, loss: $('#loss').value,
+    npos: +$('#npos').value, index: +$('#index').value / 100, avoid,
+    dividends: $('#pDiv').checked, noVol: $('#pVol').checked, freshOnly: $('#pDip').checked, bigOnly: $('#pBig').checked,
+    notes: $('#notes').value.trim().slice(0, 400),
+  };
+}
+function candidates(b){
+  return DATA.stocks.filter(s => !b.avoid.includes(s.sector) && (!b.noVol || !s.flags.some(f => f.startsWith('very volatile')))
+    && (!b.freshOnly || s.fresh) && (!b.bigOnly || s.universe === 'top100'));
+}
+function briefText(b){
+  return `THE BRIEF\n- Amount: ${money(b.amount)}\n- Time it can stay invested: ${b.horizon}\n- Worst single year they could sit through without selling: ${b.loss}\n- Individual stocks wanted: ${b.npos}\n- Share to keep in a plain S&P 500 index fund: ${Math.round(b.index*100)}%\n- Sectors to avoid: ${b.avoid.length ? b.avoid.join(', ') : 'none'}\n- Preferences: ${[b.dividends && 'prefers dividend payers', b.noVol && 'skip very volatile names', b.freshOnly && 'only fresh pull-backs', b.bigOnly && 'only today\'s largest companies'].filter(Boolean).join('; ') || 'none stated'}\n- In their words: ${b.notes || '(nothing added)'}`;
+}
+function dataText(cands){
+  const line = s => `${s.ticker} ${s.name} | ${s.sector} | score ${s.score} (quality ${s.quality}, value ${s.value}, timing ${s.timing}) | $${s.price} | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh, set ' + s.days_since_high + ' days ago)' : ''} | ${pct(s.above_200,0,true)} vs 200-day | P/E ${isNum(s.pe) ? s.pe : 'n/a'}${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? ' (cheaper than ' + (100 - s.pe_pct_5y) + '% of its own 5 yrs)' : ' (pricier than ' + s.pe_pct_5y + '% of its own 5 yrs)') : ''} | ${s.financial ? 'financial: no FCF' : 'FCF yield ' + pct(s.fcf_yield,1)} | ROE ${pct(s.roe)} | revenue ${pct(s.rev_growth,0,true)} | debt/equity ${isNum(s.debt_to_equity) ? s.debt_to_equity : 'n/a'} | 1-yr ${pct(s.ret1y,0,true)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | volatility ${pct(s.vol60)} | flags: ${s.flags.length ? s.flags.join('; ') : 'none'}`;
+  return `CANDIDATES (${cands.length} stocks, ranked by the Ledger score; all figures from SEC filings and prices as of ${DATA.as_of})\n` + cands.map(line).join('\n');
+}
+function recordText(){
+  const r = DATA.record, d = DATA.dist;
+  return `THE RECORD (point-in-time test, ${r.first} to ${r.last}, dividends included): a top-10 pick beat SPY over the next year ${Math.round(r.per_pick_beat_spy*100)}% of the time and averaged ${(r.per_pick_vs_spy*100).toFixed(1)} points vs SPY but only ${(r.per_pick_vs_avg*100).toFixed(1)} points vs the average candidate (the candidate list itself beat SPY). A 10-stock basket re-picked quarterly compounded at ${(r.basket_cagr*100).toFixed(1)}%/yr vs SPY ${(r.spy_cagr*100).toFixed(1)}%, worst fall ${Math.round(r.basket_maxdd*100)}% vs SPY ${Math.round(r.spy_maxdd*100)}%, beat SPY in ${Math.round(r.quarters_beat*100)}% of quarters. Picks from once-large companies that later fell beat SPY only ${Math.round(r.fallen_beat*100)}% of the time. The quarterly edge over the average candidate has a t-statistic of ${r.edge_vs_avg ? r.edge_vs_avg.t.toFixed(2) : 'n/a'} (not distinguishable from luck). In a bad year (worst 1 in 10) the basket lost ${Math.round(-d.basket[0]*100)}%.`;
+}
+const RULES = `You are one seat on an investment committee reviewing a real, numbers-only candidate list for one person. Write as a seasoned human analyst would in a meeting: direct, specific, plain English, no headings, no bullet symbols, no markdown, no mention of being an AI. Refer to stocks by ticker. Use only the numbers given. Never promise returns. Stay under the word limit.`;
+const PROMPTS = {
+  q: (b, cands) => `${RULES}\n\nYOUR SEAT: Quality Analyst. Your only question is whether each candidate is a genuinely strong business: return on equity, how much revenue becomes free cash, revenue growth, debt, the three-year record. Ignore price and timing; others cover those.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nWrite a memo of at most 170 words: name the ${Math.min(8, cands.length)} strongest businesses for this brief with one concrete reason each (cite a figure), name one popular candidate you refuse and why, and end with one sentence on what the Value Analyst should watch for.`,
+  v: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Value Analyst. Your only question is price: is each candidate cheap or dear against its own five-year history and against the others (P/E, free-cash-flow yield, earnings yield). Quality is someone else's job.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nThe Quality Analyst wrote:\n"""${memos.q}"""\n\nWrite a memo of at most 170 words: from the Quality Analyst's shortlist, which are reasonably priced and which are expensive against their own history (cite the figures); add up to two candidates they overlooked that are cheap AND decent; say which single name you would not pay today's price for.`,
+  r: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Risk Officer. Your job is fitting the portfolio to this person, not picking winners: their worst tolerable year (${b.loss}), their horizon (${b.horizon}), their ${money(b.amount)}, concentration by sector and by stock, volatility figures, the red flags in the data, and the index-fund share they asked for.\n\n${briefText(b)}\n\n${dataText(cands)}\n\n${recordText()}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nWrite a memo of at most 170 words. State a hard cap on any one sector and any one stock as a share of the whole amount, say whether the index-fund share they chose is enough for a person who can only sit through ${b.loss}, name any shortlisted stock that must be cut for risk (cite the volatility or flag), and give the Chair one constraint it may not break.`,
+  s: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Skeptic. You argue against the committee using the record and the known weaknesses of this method: the candidate list is partly hindsight (today's largest companies), the quality score chases the last cycle (it loved oil in January 2023 and Meta and AMD in January 2022), a dip in a strong company is only a bargain if the company stays strong, and the top picks beat the index about half the time.\n\n${briefText(b)}\n\n${recordText()}\n\nCandidate list summary: ${cands.slice(0, 20).map(s => s.ticker + ' (' + s.sector + ', score ' + s.score + ')').join(', ')}.\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nWrite at most 150 words: name the two picks most likely to be the ones that fail and why, say what would have to be true for this portfolio to beat a plain index fund, and state plainly what the record says the odds are. Be fair: if something in the memos is sound, say so in one sentence.`,
+  c: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Chair. Write the final allocation for this person from the candidate list, honouring the Risk Officer's constraint, the person's index-fund share (${Math.round(b.index*100)}% of the total; you may raise it, never lower it), exactly ${b.npos} individual stocks unless the memos give a strong reason for fewer, no sector above the Risk Officer's cap, and the person's stated preferences. Weights are shares of the WHOLE amount and must sum to 1 with the index fund and any cash.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nReply with only a JSON object, no other text, shaped exactly like this example:\n{"summary": "two or three plain sentences (max 60 words) on the shape of the portfolio and why", "index_weight": 0.5, "cash_weight": 0.0, "positions": [{"ticker": "XXXX", "weight": 0.1, "why": "one concrete reason under 20 words citing a figure"}], "risks": ["three short sentences, the most likely ways this loses money"], "watch": ["two short sentences: what to check before buying, e.g. earnings dates and the news behind the dip"], "dissent_expected": "one sentence on which seat will object and why"}`,
+  vote: (id, b, chair) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. The Chair proposes for this person (${money(b.amount)}, horizon ${b.horizon}, worst tolerable year ${b.loss}): index fund ${Math.round((chair.index_weight||0)*100)}%, cash ${Math.round((chair.cash_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}. Chair's summary: "${chair.summary}". Your earlier memo is what you said before.\n\nReply with only a JSON object like {"vote": "approve", "note": "one sentence under 25 words"} where vote is "approve" or "dissent". Dissent only if a constraint you cared about was broken.`,
+};
+
+/* ---------- rendering ---------- */
+const minutes = $('#minutes');
+let ctl = null, sample = null, session = 0;
+function clock(){ return new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}); }
+function memoCard(id){
+  const s = seat(id);
+  const el = document.createElement('article'); el.className = 'memo'; el.style.setProperty('--seat', s.color); el.id = 'memo-' + id;
+  el.innerHTML = `<div class="who"><div class="seal">${s.seal}</div><div><b>${s.name}</b><br><span>${s.job}</span></div><span class="t">${clock()}</span></div><div class="body thinking">Reading the numbers</div>`;
+  minutes.appendChild(el); $('#seat-' + id).classList.add('live');
+  return el;
+}
+function setBody(el, text, done){ const b = el.querySelector('.body'); b.classList.toggle('thinking', !done && !text); b.textContent = text || (done ? '' : 'Reading the numbers'); if (done) $('#seat-' + el.id.slice(5)).classList.remove('live'); }
+function fail(el, e){ const b = el.querySelector('.body'); b.classList.remove('thinking'); if (e.text) b.textContent = e.text; const m = document.createElement('p'); m.className = 'err'; m.textContent = copyFor(e.code); el.appendChild(m); }
+function copyFor(code){ return ({not_granted:'You declined to let this page use your Claude account, so the committee cannot sit. Reload to be asked again.', rate_limited:'Claude is busy right now. Wait a minute and convene again.', cancelled:'Session stopped.', invalid_json:'The Chair did not return a usable allocation. Convene again.', prompt_too_large:'The brief and data were too long for one call.', unavailable:'Claude could not be reached from this page.'})[code] || ('Something went wrong (' + code + ').'); }
+function mini(spark, color){
+  const v = (spark || []).filter(isNum); if (v.length < 2) return '';
+  const lo = Math.min(...v), hi = Math.max(...v), W = 70, H = 22;
+  const pts = v.map((y, i) => `${(i/(v.length-1)*W).toFixed(1)},${(H - 2 - (hi === lo ? H/2 : (y-lo)/(hi-lo)*(H-4))).toFixed(1)}`).join(' ');
+  return `<svg class="mini" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/><circle cx="${W}" cy="${pts.split(' ').pop().split(',')[1]}" r="2" fill="${color}"/></svg>`;
+}
+function renderDecision(b, chair, example){
+  const byT = Object.fromEntries(DATA.stocks.map(s => [s.ticker, s]));
+  let pos = (chair.positions || []).filter(p => byT[p.ticker] && isNum(p.weight) && p.weight > 0).slice(0, 12);
+  let idx = isNum(chair.index_weight) ? Math.max(b.index, Math.min(1, chair.index_weight)) : b.index;
+  let cash = isNum(chair.cash_weight) ? Math.max(0, Math.min(0.5, chair.cash_weight)) : 0;
+  const sumPos = pos.reduce((a, p) => a + p.weight, 0), room = Math.max(0, 1 - idx - cash);
+  if (sumPos > 0) pos = pos.map(p => ({...p, weight: p.weight / sumPos * room})); else cash += room;
+  const bars = [{lab:'S&P 500 index fund', sub:'the part that just tracks the market', w:idx, cls:'index'}]
+    .concat(pos.map(p => ({lab:p.ticker, sub:byT[p.ticker].name, w:p.weight, cls:''})))
+    .concat(cash > 0.001 ? [{lab:'Cash', sub:'left aside', w:cash, cls:'cash'}] : []);
+  const maxW = Math.max(...bars.map(x => x.w), 0.01);
+  const sectors = {}; for (const p of pos) sectors[byT[p.ticker].sector] = (sectors[byT[p.ticker].sector] || 0) + p.weight;
+  const topSector = Object.entries(sectors).sort((a, b) => b[1] - a[1])[0];
+  const d = DATA.dist, stockPart = b.amount * (1 - idx - cash), indexPart = b.amount * idx;
+  const row = (i) => `<tr><td>${['Bad year (worst 1 in 10)','Below-average year','Typical year','Good year','Great year (best 1 in 10)'][i]}</td><td class="r num">${money(stockPart*(1+d.basket[i]) + indexPart*(1+d.spy[i]) + b.amount*cash)}</td><td class="r num">${money(b.amount*(1+d.spy[i]))}</td></tr>`;
+  const el = document.createElement('section'); el.className = 'decision'; el.id = 'decision';
+  el.innerHTML = `${example ? '<span class="example-tag">Example session, no AI</span>' : ''}<p class="eyebrow">The Chair&rsquo;s decision &middot; ${money(b.amount)}</p><h2>Allocation</h2>
+    <p class="summary">${esc(chair.summary || '')}</p>
+    <div class="alloc">${bars.map(x => `<div class="bar ${x.cls}"><div class="lab">${esc(x.lab)}<small>${esc(x.sub)}</small></div><div class="track"><div class="fill" style="--w:${(x.w/maxW*100).toFixed(1)}%"></div></div><div class="pct">${(x.w*100).toFixed(0)}%</div><div class="usd">${money(b.amount*x.w)}</div></div>`).join('')}</div>
+    ${topSector ? `<p class="status">Largest sector among the stocks: ${esc(topSector[0])} at ${(topSector[1]*100).toFixed(0)}% of the whole amount.</p>` : ''}
+    <table><thead><tr><th>Stock</th><th>Last year</th><th class="r">Score</th><th class="r">P/E</th><th class="r">From high</th><th>The Chair&rsquo;s reason</th></tr></thead><tbody>
+    ${pos.map(p => { const s = byT[p.ticker]; return `<tr><td><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} &middot; ${esc(s.sector)}</span></td><td>${mini(s.spark, 'var(--ivory-2)')}</td><td class="r num">${s.score}</td><td class="r num">${isNum(s.pe) ? s.pe.toFixed(1) : '\u2014'}</td><td class="r num">${pct(s.dip)}</td><td class="why">${esc(p.why || '')}</td></tr>`; }).join('')}
+    </tbody></table>
+    <div class="two"><div><h3>What could go wrong</h3><ul>${(chair.risks || []).slice(0, 4).map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+      <h3 style="margin-top:14px">Before buying</h3><ul>${(chair.watch || []).slice(0, 3).map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>
+      <div><h3>The vote</h3><ul class="votes" id="votes">${['q','v','r','s'].map(id => `<li style="--seat:${seat(id).color}"><div class="seal">${seat(id).seal}</div><div><b>${seat(id).name}</b><br><span class="vote pending" id="vote-${id}">voting</span></div><span class="note" id="note-${id}"></span></li>`).join('')}</ul>
+      ${chair.dissent_expected ? `<p class="status" style="margin-top:10px">Chair expects: ${esc(chair.dissent_expected)}</p>` : ''}</div></div>
+    <div class="record"><h3>What the record says about ${money(b.amount)} placed this way</h3>
+      <p>The stock part follows the historical spread of a top-10 Ledger basket held one year (${d.n} past start dates, dividends included); the index part follows SPY. Past spread, not a forecast: the basket lost money in ${Math.round(d.lose*100)}% of years and its worst year was ${Math.round(d.worst*100)}%.</p>
+      <table><thead><tr><th>Kind of year</th><th class="r">This portfolio</th><th class="r">All in SPY</th></tr></thead><tbody>${[0,1,2,3,4].map(row).join('')}</tbody></table></div>
+    <div class="actions"><button type="button" class="primary" id="copy">Copy the minutes</button><button type="button" id="again">Convene again</button></div>`;
+  minutes.appendChild(el);
+  $('#copy').onclick = async () => { try { await navigator.clipboard.writeText(minutesText()); $('#copy').textContent = 'Copied'; } catch { $('#copy').textContent = 'Could not copy'; } };
+  $('#again').onclick = () => { $('#go').click(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+  el.scrollIntoView({behavior: 'smooth', block: 'start'});
+  return {pos, idx, cash};
+}
+function setVote(id, v){ const el = $('#vote-' + id); if (!el) return; const ok = String(v.vote).toLowerCase() === 'approve'; el.className = 'vote ' + (ok ? 'approve' : 'dissent'); el.textContent = ok ? 'approve' : 'dissent'; $('#note-' + id).textContent = v.note || ''; }
+function minutesText(){ return [...minutes.querySelectorAll('.memo')].map(m => m.querySelector('.who b').textContent + ':\n' + m.querySelector('.body').textContent).join('\n\n') + '\n\n' + ($('#decision') ? $('#decision').innerText : ''); }
+
+/* ---------- the session ---------- */
+async function convene(){
+  const b = brief(), cands = candidates(b), my = ++session;
+  minutes.innerHTML = '';
+  if (cands.length < b.npos) { minutes.innerHTML = `<p class="empty"><b>Only ${cands.length} candidates pass this brief.</b> Loosen the sector or preference filters, or ask for fewer stocks.</p>`; return; }
+  $('#go').disabled = true; $('#stop').hidden = false; $('#state').textContent = 'in session'; $('#state').classList.add('on');
+  ctl = new AbortController();
+  const memos = {};
+  const speak = async (id, prompt) => {
+    const el = memoCard(id);
+    $('#live').textContent = seat(id).name + ' is writing';
+    try {
+      const { text } = await sample(prompt, { signal: ctl.signal, modelTier: 'default', cache: false, onText: ({ text }) => { if (my === session) setBody(el, text, false); } });
+      setBody(el, text, true); memos[id] = text; return text;
+    } catch (e) { setBody(el, e.text || '', true); fail(el, e); throw e; }
+  };
+  try {
+    await speak('q', PROMPTS.q(b, cands));
+    await speak('v', PROMPTS.v(b, cands, memos));
+    await speak('r', PROMPTS.r(b, cands, memos));
+    await speak('s', PROMPTS.s(b, cands, memos));
+    const el = memoCard('c'); setBody(el, '', false); $('#live').textContent = 'The Chair is writing the allocation';
+    let chair;
+    try { chair = await sample.json(PROMPTS.c(b, cands, memos), { signal: ctl.signal, modelTier: 'default', cache: false }); }
+    catch (e) { fail(el, e); throw e; }
+    setBody(el, chair.summary || 'Allocation below.', true);
+    const fixed = renderDecision(b, chair, false);
+    const chairFixed = {...chair, index_weight: fixed.idx, cash_weight: fixed.cash, positions: fixed.pos};
+    $('#live').textContent = 'The seats are voting';
+    for (const id of ['q','v','r','s']) {
+      try { setVote(id, await sample.json(PROMPTS.vote(id, b, chairFixed), { signal: ctl.signal, modelTier: 'quick', cache: false })); }
+      catch (e) { const v = $('#vote-' + id); if (v) { v.className = 'vote pending'; v.textContent = e.code === 'cancelled' ? 'no vote' : 'no vote'; } if (e.code === 'cancelled') break; }
+    }
+    $('#live').textContent = 'Session complete';
+  } catch (e) {
+    $('#status').className = 'status ' + (e.code === 'cancelled' ? '' : 'bad'); $('#status').textContent = copyFor(e.code);
+  } finally {
+    $('#go').disabled = false; $('#stop').hidden = true; $('#state').textContent = 'adjourned'; $('#state').classList.remove('on');
+    for (const s of SEATS) $('#seat-' + s.id).classList.remove('live');
+  }
+}
+$('#stop').onclick = () => ctl && ctl.abort();
+
+/* ---------- example session (when Claude cannot be reached) ---------- */
+function exampleSession(){
+  const b = brief(), cands = candidates(b);
+  minutes.innerHTML = '';
+  const top = cands.slice(0, 10), f = x => x.toFixed(0);
+  const byQ = [...cands].sort((a, c) => c.quality - a.quality).slice(0, 6), byV = [...cands].sort((a, c) => c.value - a.value).slice(0, 5);
+  const sectorCount = {}; for (const s of top) sectorCount[s.sector] = (sectorCount[s.sector] || 0) + 1;
+  const big = Object.entries(sectorCount).sort((a, c) => c[1] - a[1])[0];
+  const texts = {
+    q: `Strongest businesses on this list, by the filings: ${byQ.map(s => `${s.ticker} (ROE ${f(s.roe)}%, revenue ${pct(s.rev_growth,0,true)})`).join(', ')}. I would refuse ${top.find(s => s.flags.length >= 2)?.ticker || top[top.length-1].ticker} on its flags alone. Value should watch how many of these are priced for perfection: several sit above the top fifth of their own history.`,
+    v: `On price, the shortlist splits. Reasonable against their own past: ${byV.map(s => `${s.ticker} (P/E ${isNum(s.pe) ? s.pe : 'n/a'})`).join(', ')}. Expensive against their own past: ${top.filter(s => isNum(s.pe_pct_5y) && s.pe_pct_5y > 80).slice(0,3).map(s => s.ticker).join(', ') || 'few'}. I would not pay today's price for ${top.reduce((a, s) => (isNum(s.pe) && s.pe > (a.pe||0)) ? s : a, {}).ticker || top[0].ticker}.`,
+    r: `For someone who can only sit through ${b.loss} with ${money(b.amount)}: cap any one sector at 30% of the whole amount and any one stock at 10%. ${big ? `${big[1]} of the top ten are ${big[0]}, so the shortlist as written is one bet, not ten.` : ''} The ${Math.round(b.index*100)}% index share is ${b.index >= 0.5 ? 'appropriate' : 'too low for that loss tolerance; I would raise it'}. Constraint the Chair may not break: no stock flagged very volatile above 5%.`,
+    s: `The record says a top pick beats the index about ${Math.round(DATA.record.per_pick_beat_spy*100)}% of the time, and against the average candidate the edge cannot be told from luck. The two most likely failures are the two with the deepest dips and the richest multiples: a dip is only a bargain if the business stays strong, and the score cannot see that. This beats an index fund only if this year's leaders are next year's, which is exactly what it assumed in January 2022. The Risk Officer's sector cap is the one sound thing here.`,
+  };
+  for (const id of ['q','v','r','s']) { const el = memoCard(id); setBody(el, texts[id], true); }
+  const picks = []; const used = {};
+  for (const s of top) { if (picks.length >= b.npos) break; if ((used[s.sector] || 0) >= 2) continue; used[s.sector] = (used[s.sector] || 0) + 1; picks.push(s); }
+  const room = 1 - b.index, w = room / picks.length;
+  const chair = { summary: `An example allocation built by simple rules, not by the committee: ${Math.round(b.index*100)}% in the index fund, the rest split equally across ${picks.length} of the highest-scoring names with no more than two per sector. Open this page inside the Claude app to convene the real committee.`,
+    index_weight: b.index, cash_weight: 0, positions: picks.map(s => ({ticker: s.ticker, weight: w, why: `Score ${s.score}; ${s.verdict.toLowerCase()}`})),
+    risks: ['The stocks share one sector story more than the count suggests.', 'A strong three-year record is partly last cycle\'s story.', 'Filings lag by months; the news behind a dip is not in these numbers.'],
+    watch: ['Check each earnings date; a report within two weeks can move a stock 10% overnight.', 'Read why each stock fell before deciding the dip is temporary.'], dissent_expected: 'The Skeptic will dissent on the record.' };
+  const el = memoCard('c'); setBody(el, chair.summary, true);
+  renderDecision(b, chair, true);
+  setVote('q', {vote:'approve', note:'Businesses are sound.'}); setVote('v', {vote:'approve', note:'Prices are mixed but acceptable.'}); setVote('r', {vote:'approve', note:'Caps respected.'}); setVote('s', {vote:'dissent', note:'The record says coin flip.'});
+  $('#state').textContent = 'example';
+}
+
+/* ---------- start ---------- */
+(async () => {
+  const has = window.claude && typeof window.claude.use === 'function';
+  sample = has ? await window.claude.use('sample') : null;
+  if (sample) {
+    $('#status').className = 'status'; $('#status').textContent = 'Live. Convening asks once to use your Claude account; a session takes a minute or two.';
+    $('#go').onclick = convene;
+  } else {
+    $('#status').className = 'status warn'; $('#status').textContent = 'This copy of the page cannot reach Claude, so it shows an example session built by simple rules. Open it inside the Claude app for the real committee.';
+    $('#go').textContent = 'Show an example session'; $('#go').onclick = exampleSession;
+  }
+})();
+</script>

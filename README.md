@@ -34,6 +34,7 @@ describes the fundamentals-based score behind the **Bargain Ledger** web page
 | `site/bargain_ledger.html` | The page itself: ranked stocks, why each scores as it does, and the record. **Open this one in a browser.** (`site/index.html` is the same page without the document wrapper, for hosting.) |
 | `data/fundamentals/` | Compact SEC filing data for every company. |
 | `RESEARCH_SCORE.md` | Write-up of the score and its backtest. |
+| `build_committee.py` + `committee_template.html` | Builds `site/ledger_committee.html`, the Ledger Committee: five AI analysts (quality, value, risk, skeptic, chair) deliberate live on the page over the Ledger's candidates to propose a portfolio for the brief you fill in. Needs to be opened inside the Claude app to run; elsewhere it shows an example session. |
 | `swing/universe.py` | The list of 100 stocks. |
 | `swing/data.py` | Download / load code (stooq with Yahoo fallback). |
 | `swing/indicators.py` | Moving averages, RSI, ATR, 52-week high/low, pullback detection. |
@@ -64,6 +65,7 @@ python scan_dips.py --no-download        # today's strong-stock-in-a-dip list
 # the Bargain Ledger page: refresh prices + SEC filings, score, and rebuild site/bargain_ledger.html
 python build_site.py --download
 python backtest_score.py                 # optional: re-run the point-in-time test of the score
+python build_committee.py                # the Ledger Committee page (after build_site.py)
 
 # 5. any day after the close: what matches the setup today?
 python scan_today.py                       # $3,000 account, 2% risk (defaults)
