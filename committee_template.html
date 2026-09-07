@@ -248,13 +248,13 @@ const newsLine = s => { const ev = (s.events || []).slice(0, 4).join('; '), hl =
 function newsText(cands, memos, label){
   const names = tick(cands, memos); const rows = cands.filter(s => names.includes(s.ticker));
   if (!rows.length) return '';
-  return `\nRECENT EVENTS AND HEADLINES for the names under discussion (SEC filings and a public headline feed as of ${DATA.as_of}; headlines are third-party opinion, treat as leads, not facts):\n` + rows.map(newsLine).join('\n') + '\n';
+  return `\nRECENT EVENTS, HEADLINES AND PRICE PATHS for the names under discussion (SEC filings and a public headline feed as of ${DATA.as_of}; headlines are third-party opinion, treat as leads, not facts):\n` + rows.map(s => newsLine(s) + trendP(s)).join('\n') + '\n';
 }
 /* each seat gets a different slice of the filings, and nobody gets the Ledger score */
 const SLICE = {
   q: s => `${s.ticker} ${s.name} | ${s.sector} | ROE ${pct(s.roe)} | ${s.financial ? 'net margin ' + pct(s.net_margin) : 'free cash ' + pct(s.fcf_margin) + ' of revenue'} | revenue ${pct(s.rev_growth,0,true)} | profit ${pct(s.ni_growth,0,true)} | debt/equity ${n0(s.debt_to_equity,2)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | revenue ${money(s.revenue_ttm/1e9)}B${trendQ(s)} | flags: ${s.flags.filter(f => /losing|shrinking|debt|one-off|stale/.test(f)).join('; ') || 'none'}`,
   v: s => `${s.ticker} | ${s.sector} | $${s.price} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? ' (cheaper than ' + (100 - s.pe_pct_5y) + '% of its own 5 yrs)' : ' (pricier than ' + s.pe_pct_5y + '% of its own 5 yrs)') : ''} | P/S ${n0(s.ps,1)} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | earnings yield ${pct(s.earnings_yield,1)} | 1-yr ${pct(s.ret1y,0,true)} | ${pct(-s.dip)} below 52-wk high${trendP(s)} | flags: ${s.flags.filter(f => /expensive|priced above|one-off/.test(f)).join('; ') || 'none'}`,
-  r: s => `${s.ticker} | ${s.sector} | market value ${money(s.mcap/1e9)}B | volatility ${pct(s.vol60)}/yr | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh)' : ' (old high)'} | ${pct(s.above_200,0,true)} vs 200-day | debt/equity ${n0(s.debt_to_equity,2)} | 1-yr ${pct(s.ret1y,0,true)}${trendP(s)} | flags: ${s.flags.join('; ') || 'none'}`,
+  r: s => `${s.ticker} | ${s.sector} | market value ${money(s.mcap/1e9)}B | volatility ${pct(s.vol60)}/yr | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh)' : ' (old high)'} | ${pct(s.above_200,0,true)} vs 200-day | debt/equity ${n0(s.debt_to_equity,2)} | 1-yr ${pct(s.ret1y,0,true)} | flags: ${s.flags.join('; ') || 'none'}`,
   c: s => `${s.ticker} ${s.name} | ${s.sector} | $${s.price} | ROE ${pct(s.roe)} | rev ${pct(s.rev_growth,0,true)} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? ' (' + (s.pe_pct_5y <= 50 ? 'cheaper' : 'pricier') + ' than ' + (s.pe_pct_5y <= 50 ? 100 - s.pe_pct_5y : s.pe_pct_5y) + '% of own 5 yrs)' : ''} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | ${pct(-s.dip)} below high${s.fresh ? ' (fresh)' : ''} | vol ${pct(s.vol60)} | D/E ${n0(s.debt_to_equity,2)} | flags: ${s.flags.join('; ') || 'none'}`,
 };
 function dataText(cands, who){
