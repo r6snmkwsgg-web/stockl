@@ -50,7 +50,10 @@ def main():
         "first": bt.get("first"), "last": bt.get("last"),
     }
     sectors = sorted({s["sector"] for s in stocks})
-    data = {"as_of": payload["as_of"], "market": payload["market"], "stocks": stocks, "sectors": sectors,
+    # SPY's own recent volatility, so the page can put the index share on the same footing
+    spy_px = pd.read_csv("data/prices/SPY.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
+    spy_vol = float(np.log(spy_px).diff().rolling(60).std().iloc[-1] * np.sqrt(252) * 100)
+    data = {"as_of": payload["as_of"], "market": {**payload["market"], "spy_vol": round(spy_vol, 1)}, "stocks": stocks, "sectors": sectors,
             "dist": dist, "record": record, "counts": payload["counts"]}
     js = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     page = TEMPLATE.read_text().replace("__DATA__", js)
