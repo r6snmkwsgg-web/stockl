@@ -13,6 +13,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from swing import news as newsmod
+from swing.fundamentals import FLOW_TAGS, _pick, load as load_facts
+
 TEMPLATE = Path("committee_template.html")
 OUT = Path("site/committee.html")
 STANDALONE = Path("site/ledger_committee.html")
@@ -29,6 +32,37 @@ def main():
     stocks = [{k: s.get(k) for k in keep} for s in el]
     for s in stocks:
         s["spark"] = [v for v in s["spark"][::4]] if s.get("spark") else []   # ~13 points, enough for a mini line
+        t = s["ticker"]
+        # price trend: month-end closes over the last year, as % change from a year ago
+        for d in ["data/prices", "data/control"]:
+            f = Path(d) / f"{t}.csv.gz"
+            if f.exists():
+                px = pd.read_csv(f, parse_dates=["Date"], index_col="Date")["Close"]
+                break
+        else:
+            px = None
+        if px is not None and len(px) > 260:
+            last = px.iloc[-260:]
+            me = last.groupby([last.index.year, last.index.month]).last()
+            base = float(me.iloc[0])
+            s["path"] = [round((float(v) / base - 1) * 100) for v in me.iloc[1:]]
+        else:
+            s["path"] = []
+        # business trend: the last six quarters of revenue and profit from the filings
+        facts = load_facts(t)
+        s["q_rev"], s["q_ni"] = [], []
+        if facts:
+            for key, item in [("q_rev", "revenue"), ("q_ni", "net_income")]:
+                q = _pick(facts["tags"], FLOW_TAGS[item], "flow")
+                if len(q):
+                    q = q[q["end"] <= pd.Timestamp(payload["as_of"]).date()].tail(6)
+                    s[key] = [round(float(v) / 1e9, 2) for v in q["val"]]
+        # official events and headlines
+        n = newsmod.load(t) or {}
+        s["events"] = [f"{e['date']}: {e['what']}" for e in n.get("events", [])][:6]
+        s["headlines"] = [f"{h['date']}: {h['title']}" for h in n.get("headlines", [])][:5]
+        s["last_report"] = (n.get("last_report") or {}).get("filed")
+        s["next_report"] = n.get("next_report_est")
 
     # historical distribution of a top-10 basket held a year, and of SPY, from the point-in-time test
     p = pd.read_csv("results/score_picks.csv", parse_dates=["date"])
