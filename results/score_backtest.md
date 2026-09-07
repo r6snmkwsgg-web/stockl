@@ -1,5 +1,7 @@
 # Score backtest: 55 quarterly rebalances, 2012-01-03 to 2025-07-01
 
+Weights: quality 70%, value 20%, timing 10%; flag penalty 0 points per flag.
+
 | Group | picks | avg 12-mo return | median 12-mo | avg vs SPY 12-mo | beat SPY (12-mo) | avg 3-mo | beat SPY (3-mo) | lost >20% in 12-mo |
 |---|---|---|---|---|---|---|---|---|
 | Top 10 by score | 550 | +16.8% | +14.4% | +3.4% | 54% | +5.0% | 55% | 15% |

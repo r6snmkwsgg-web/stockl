@@ -40,6 +40,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from .data import load_events
 from .fundamentals import pit_frame
 from .indicators import add_indicators
 from .universe import FINANCIAL, SECTORS
@@ -65,7 +66,14 @@ def features(ticker: str, px: pd.DataFrame, calendar: pd.DatetimeIndex, spy: pd.
         return None
     d = add_indicators(px).reindex(calendar)
     c = d["Close"]
+    # Prices are split-adjusted. For the $10 and volume rules we need what actually traded:
+    # real price = adjusted price x every split that came AFTER that day.
+    fac = pd.Series(1.0, index=calendar)
+    for sd, ratio in load_events(ticker).get("splits", []):
+        fac[calendar < pd.Timestamp(sd)] *= ratio
     out = pd.DataFrame(index=calendar)
+    out["price_real"] = c * fac
+    out["avgvol_real"] = d["avgvol50"] / fac
     out["ticker"] = ticker
     out["sector"] = SECTORS.get(ticker, "Other")
     out["financial"] = ticker in FINANCIAL
@@ -135,7 +143,7 @@ def score_day(rows: pd.DataFrame) -> pd.DataFrame:
 
     # eligibility (hard filters)
     ok = ((r["net_income_ttm"] > 0) & (r["revenue_ttm"] > 0) & r["mcap"].notna()
-          & (r["close"] > MIN_PRICE) & (r["avgvol50"] > MIN_AVG_VOLUME)
+          & (r["price_real"] > MIN_PRICE) & (r["avgvol_real"] > MIN_AVG_VOLUME)
           & (r["days_since_filing"] <= STALE_DAYS)
           & (fin | (r["fcf_ttm"] > 0)))
     r["eligible"] = ok.fillna(False)
@@ -185,7 +193,7 @@ def score_day(rows: pd.DataFrame) -> pd.DataFrame:
         "expensive (P/E > 50)": r["pe"] > 50,
         "priced above its 5-year norm (P/E top 20%)": r["pe_pct_5y"] > 0.80,
         "stale filings": r["days_since_filing"] > STALE_DAYS,
-        "thin trading (<500k shares/day)": r["avgvol50"] < MIN_AVG_VOLUME,
+        "thin trading (<500k shares/day)": r["avgvol_real"] < MIN_AVG_VOLUME,
     }
     flag_df = pd.DataFrame({k: v.fillna(False).astype(bool) for k, v in flags.items()})
     r["flags"] = flag_df.apply(lambda row: [k for k, v in row.items() if v], axis=1)
@@ -193,6 +201,7 @@ def score_day(rows: pd.DataFrame) -> pd.DataFrame:
 
     r["score"] = _clip100(WEIGHTS["quality"] * r["quality"] + WEIGHTS["value"] * r["value"]
                           + WEIGHTS["timing"] * r["timing"] - FLAG_PENALTY * r["n_flags"])
+    r["eligible"] &= r["score"].notna()
     r.loc[~r["eligible"], "score"] = np.nan
     return r
 

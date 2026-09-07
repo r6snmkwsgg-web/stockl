@@ -31,9 +31,10 @@ of it, and it is better than the first version, which was worse than random.
   figures are derived from year-to-date ones where a company reports that
   way (cash flow, usually). Companies that moved to a new SEC registrant
   number (Exxon, BlackRock, Disney, APA) have their old history merged in.
-* **Universe**: today's 100 largest US stocks plus 91 companies that were
-  once large or popular and later stalled or crashed. 181 of the 191 have
-  usable filings; Berkshire is deliberately excluded because its reported
+* **Universe**: today's 100 largest US stocks plus 82 further companies that
+  were once large or popular and later stalled or crashed (the control list
+  has 95 entries; 9 overlap with the top 100 and 4 no longer trade). 181 of
+  the 182 have usable filings; Berkshire is deliberately excluded because its reported
   profit swings with the market value of its investments, BioNTech files
   under international accounting rules, and four (Walgreens, US Steel,
   Kellogg, Square) no longer trade under their old symbol.
@@ -90,11 +91,16 @@ basket of the top ten, paying 0.2% per quarter in costs, was compounded.
 
 ### First version (35% quality, 40% value, 25% timing, points off per flag)
 
+Same data, dates and costs as the current version below.
+
 | Group | picks | avg 12-mo | median | vs SPY | beat SPY | lost >20% |
 |---|---|---|---|---|---|---|
-| Top 10 by score | 550 | +11.8% | +8.8% | -1.6% | 40% | 15% |
-| Bottom 10 by score | 550 | +14.6% | +11.8% | +1.3% | 48% | 9% |
-| Every eligible stock | 3710 | +14.4% | +9.9% | -0.1% | 44% | 13% |
+| Top 10 by score | 550 | +14.0% | +11.1% | +0.6% | 47% | 15% |
+| Bottom 10 by score | 550 | +16.6% | +12.7% | +3.2% | 50% | 8% |
+| Every eligible stock | 5486 | +14.9% | +11.8% | +1.3% | 48% | 11% |
+
+By score fifth, versus SPY: best fifth +1.5%, worst fifth +3.1%. The basket
+compounded at 12.6% a year, level with SPY, with the same 24% worst fall.
 
 The top picks did worse than the bottom picks. Looking at the three parts
 separately (both halves of the data agree):
@@ -130,8 +136,8 @@ Quarterly-rebalanced top-10 basket with costs: 18.2% a year against SPY's
 A note on how much these numbers move: an earlier run of the same weights,
 before the parser learned to stitch a company's history across changed
 filing labels, showed 49% beating SPY and a 15.0% basket. Nothing about the
-score changed; only how many company-quarters had usable data. Treat every
-figure here as "roughly", not "exactly".
+score changed; only how many company-quarters had usable data (3,500 then,
+5,486 now). Treat every figure here as "roughly", not "exactly".
 
 Full year-by-year tables are in `results/score_backtest.md`.
 

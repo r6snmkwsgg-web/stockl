@@ -18,6 +18,7 @@ Date,Open,High,Low,Close,Volume.
 from __future__ import annotations
 
 import io
+import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,15 +27,17 @@ import pandas as pd
 import requests
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "prices"
+EVENTS_DIR = Path(__file__).resolve().parent.parent / "data" / "events"   # splits and dividends
 START = "2010-01-01"
 # Keep this short: Yahoo answers "429 Too Many Requests" to long browser-style
 # user-agent strings sent from scripts, but accepts a plain one.
 UA = "Mozilla/5.0"
 COLS = ["Open", "High", "Low", "Close", "Volume"]
+OPT_COLS = ["AdjClose"]          # split- AND dividend-adjusted close (total-return basis)
 
 
 def _clean(df: pd.DataFrame) -> pd.DataFrame:
-    df = df[COLS].astype(float)
+    df = df[COLS + [c for c in OPT_COLS if c in df.columns]].astype(float)
     df = df[~df.index.duplicated(keep="last")].sort_index()
     df = df.dropna(subset=["Close"])
     df = df[(df["Volume"] >= 0) & (df["Close"] > 0)]
@@ -86,10 +89,20 @@ def fetch_yahoo(ticker: str, start: str = START) -> pd.DataFrame | None:
     if not ts:
         return None
     q = res["indicators"]["quote"][0]
-    df = pd.DataFrame({
-        "Open": q["open"], "High": q["high"], "Low": q["low"],
-        "Close": q["close"], "Volume": q["volume"],
-    }, index=pd.to_datetime(ts, unit="s", utc=True).tz_convert("America/New_York").normalize().tz_localize(None))
+    cols = {"Open": q["open"], "High": q["high"], "Low": q["low"], "Close": q["close"], "Volume": q["volume"]}
+    adj = res["indicators"].get("adjclose")
+    if adj and adj[0].get("adjclose"):
+        cols["AdjClose"] = adj[0]["adjclose"]
+    df = pd.DataFrame(cols, index=pd.to_datetime(ts, unit="s", utc=True).tz_convert("America/New_York").normalize().tz_localize(None))
+    # splits and dividends: needed to put SEC share counts on the same basis as adjusted prices
+    ev = res.get("events", {})
+    splits = sorted((str(pd.to_datetime(v["date"], unit="s", utc=True).tz_convert("America/New_York").date()),
+                     float(v["numerator"]) / float(v["denominator"]))
+                    for v in ev.get("splits", {}).values() if float(v.get("denominator", 0)) > 0)
+    divs = sorted((str(pd.to_datetime(v["date"], unit="s", utc=True).tz_convert("America/New_York").date()), float(v["amount"]))
+                  for v in ev.get("dividends", {}).values())
+    EVENTS_DIR.mkdir(parents=True, exist_ok=True)
+    (EVENTS_DIR / f"{ticker}.json").write_text(json.dumps({"splits": splits, "dividends": divs}))
     return _clean(df)
 
 
@@ -122,6 +135,12 @@ def download_all(tickers, source: str = "auto", pause: float = 1.5, verbose: boo
 
 def load(ticker: str) -> pd.DataFrame:
     return pd.read_csv(DATA_DIR / f"{ticker}.csv.gz", parse_dates=["Date"], index_col="Date")
+
+
+def load_events(ticker: str) -> dict:
+    """{"splits": [(date, ratio), ...], "dividends": [(date, amount), ...]} (empty if unknown)."""
+    f = EVENTS_DIR / f"{ticker}.json"
+    return json.loads(f.read_text()) if f.exists() else {"splits": [], "dividends": []}
 
 
 def load_all(tickers) -> dict[str, pd.DataFrame]:

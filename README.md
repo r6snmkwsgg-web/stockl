@@ -31,7 +31,7 @@ describes the fundamentals-based score behind the **Bargain Ledger** web page
 | `swing/score.py` | The quality / value / timing score behind the web page. |
 | `backtest_score.py` | Point-in-time test of the score: quarterly top-10 picks 2012-2025 vs SPY. Writes `results/score_backtest.md`. |
 | `build_site.py` + `site_template.html` | Builds `site/index.html`, the Bargain Ledger page. |
-| `site/index.html` | The page itself: ranked stocks, why each scores as it does, and the record. Open it in a browser. |
+| `site/bargain_ledger.html` | The page itself: ranked stocks, why each scores as it does, and the record. **Open this one in a browser.** (`site/index.html` is the same page without the document wrapper, for hosting.) |
 | `data/fundamentals/` | Compact SEC filing data for every company. |
 | `RESEARCH_SCORE.md` | Write-up of the score and its backtest. |
 | `swing/universe.py` | The list of 100 stocks. |
@@ -61,7 +61,7 @@ python research_variants.py
 python research_dips.py
 python scan_dips.py --no-download        # today's strong-stock-in-a-dip list
 
-# the Bargain Ledger page: refresh prices + SEC filings, score, and rebuild site/index.html
+# the Bargain Ledger page: refresh prices + SEC filings, score, and rebuild site/bargain_ledger.html
 python build_site.py --download
 python backtest_score.py                 # optional: re-run the point-in-time test of the score
 

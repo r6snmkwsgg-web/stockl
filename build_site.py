@@ -24,18 +24,34 @@ from swing.score import NOT_SCORED, WEIGHTS, build_features, cross_section
 from swing.universe import ALL_TICKERS, MARKET, STOCKS
 
 OUT = Path("site/index.html")
+STANDALONE = Path("site/bargain_ledger.html")
 TEMPLATE = Path(__file__).with_name("site_template.html")
 
 
+NAME_OVERRIDES = {
+    "BAC": "Bank of America", "JPM": "JPMorgan Chase", "T": "AT&T", "MA": "Mastercard", "MRK": "Merck & Co",
+    "CPB": "Campbell's", "WFC": "Wells Fargo", "IBM": "IBM", "HPQ": "HP", "AMD": "AMD",
+    "CVS": "CVS Health", "KLAC": "KLA", "LRCX": "Lam Research", "TJX": "TJX", "ADP": "ADP",
+    "GE": "GE Aerospace", "MMM": "3M", "GM": "General Motors", "F": "Ford Motor", "ETSY": "Etsy",
+}
+
+
 def clean_name(n: str | None, ticker: str) -> str:
+    if ticker in NAME_OVERRIDES:
+        return NAME_OVERRIDES[ticker]
     if not n:
         return ticker
+    n = n.replace("\u00a0", " ")
+    n = re.sub(r"\s+", " ", n).strip()
     n = re.sub(r"\s*/[A-Z]+/?\s*$", "", n)        # "/NEW", "/DE/"
     n = re.sub(r"\s*\((?:THE|DE|NEW)\)\s*$", "", n, flags=re.I)
-    n = n.title()
-    for a, b in [(" Inc.", " Inc"), (" Inc", ""), (" Corp.", ""), (" Corp", ""), (" Co.", ""), (",", ""),
-                 (" Plc", ""), (" Ltd", ""), (" Holdings", " Holdings"), ("Llc", "LLC"), ("&", "&")]:
-        n = n.replace(a, b)
+    n = n.title().replace("'S", "'s")
+    n = re.sub(r"\s+Incorporated$", "", n)
+    n = re.sub(r",?\s+Inc\.?$", "", n)
+    n = re.sub(r",?\s+Corp(oration)?\.?$", "", n)
+    n = re.sub(r"(?<!&)\s+Co\.?$", "", n)
+    n = re.sub(r",?\s+(Plc|Ltd\.?|Llc)$", "", n)
+    n = n.replace(",", "").replace("Llc", "LLC")
     n = re.sub(r"\b(Ii|Iii|Iv)\b", lambda m: m.group(0).upper(), n)
     return n.strip() or ticker
 
@@ -111,7 +127,12 @@ def verdict(r) -> str:
     parts = []
     parts.append({2: "Strong business", 1: "Decent business", 0: "Weak business"}[2 if r["quality"] >= 65 else 1 if r["quality"] >= 45 else 0])
     parts.append({2: "priced well below its norm", 1: "fairly priced", 0: "priced above its norm"}[2 if r["value"] >= 65 else 1 if r["value"] >= 45 else 0])
-    parts.append({2: "in a fresh pull-back", 1: "modest pull-back", 0: "no real pull-back"}[2 if r["timing"] >= 65 else 1 if r["timing"] >= 45 else 0])
+    if r["timing"] >= 65:
+        parts.append("in a fresh pull-back" if r["fresh"] else "well below a high set months ago")
+    elif r["timing"] >= 45:
+        parts.append("modest pull-back")
+    else:
+        parts.append("no real pull-back")
     return ", ".join(parts) + "."
 
 
@@ -147,10 +168,29 @@ def main():
         spark_sma = [num(sma.iloc[i], 2) for i in idx]
         spark_dates = [str(last252.index[i].date()) for i in idx]
         fdata = fundamentals.load(t) or {}
+        highs = prices[t]["High"].reindex(cal).iloc[-252:]
+        r["days_since_high"] = 251 - int(np.nanargmax(highs.to_numpy())) if highs.notna().any() else np.nan
+        r["fresh"] = bool(r["days_since_high"] < 60)
         reason = None
         if not r["eligible"]:
-            hard = [f for f in r["flags"] if f.startswith(("losing", "negative free", "stale", "thin"))]
-            reason = hard[0] if hard else "missing data"
+            if pd.isna(r["mcap"]):
+                reason = "filings carry no share count"
+            elif pd.isna(r["revenue_ttm"]) or pd.isna(r["net_income_ttm"]):
+                reason = "no usable filings"
+            elif r["days_since_filing"] > 135:
+                reason = "stale filings"
+            elif r["price_real"] <= 10:
+                reason = "price under $10"
+            elif r["avgvol_real"] <= 500_000:
+                reason = "thin trading"
+            elif r["net_income_ttm"] <= 0:
+                reason = "losing money"
+            elif not r["financial"] and r["fcf_ttm"] <= 0:
+                reason = "negative free cash flow"
+            elif pd.isna(r["score"]):
+                reason = "not enough price history"
+            else:
+                reason = "missing data"
         stocks.append({
             "ticker": t, "name": clean_name(fdata.get("name"), t), "sector": r["sector"],
             "universe": "top100" if t in STOCKS else "fallen", "financial": bool(r["financial"]),
@@ -162,11 +202,11 @@ def main():
             "fresh": bool(r["fresh"]) if pd.notna(r["fresh"]) else False,
             "above_200": pct(r["above_200"], 1), "pe": num(r["pe"], 1), "pe_reported": num(r["pe_reported"], 1),
             "pe_pct_5y": pct(r["pe_pct_5y"], 0), "ps": num(r["ps"], 2), "ps_pct_5y": pct(r["ps_pct_5y"], 0),
-            "pb": num(r["pb"], 2), "fcf_yield": pct(r["fcf_yield"], 1), "earnings_yield": pct(r["earnings_yield"], 1),
-            "roe": pct(r["roe"], 0), "net_margin": pct(r["net_margin"], 0), "fcf_margin": pct(r["fcf_margin"], 0),
+            "pb": num(r["pb"], 2), "fcf_yield": None if r["financial"] else pct(r["fcf_yield"], 1), "earnings_yield": pct(r["earnings_yield"], 1),
+            "roe": pct(r["roe"], 0), "net_margin": pct(r["net_margin"], 0), "fcf_margin": None if r["financial"] else pct(r["fcf_margin"], 0),
             "rev_growth": pct(r["rev_growth"], 1), "ni_growth": pct(r["ni_growth"], 0),
             "debt_to_equity": num(r["debt_to_equity"], 2), "revenue_ttm": num(r["revenue_ttm"], 0),
-            "net_income_ttm": num(r["net_income_ttm"], 0), "fcf_ttm": num(r["fcf_ttm"], 0),
+            "net_income_ttm": num(r["net_income_ttm"], 0), "fcf_ttm": None if r["financial"] else num(r["fcf_ttm"], 0),
             "ret1y": pct(r["ret1y"], 0), "ret3y_vs_spy": pct(r["ret3y_vs_spy"], 0), "vol60": pct(r["vol60"], 0),
             "rsi14": num(r["rsi14"], 0), "days_since_filing": None if pd.isna(r["days_since_filing"]) else int(r["days_since_filing"]),
             "hi52": num(last252.max(), 2), "lo52": num(last252.min(), 2),
@@ -197,14 +237,18 @@ def main():
     }
     js = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")
     html = TEMPLATE.read_text().replace("__DATA__", js)
+    assert all(ord(c) < 128 for c in html), "page must be ASCII-only so it renders without a charset header"
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(html)
+    OUT.write_text(html)                      # body-only: this is what gets published as the hosted page
+    head, body = html.split("\n", 1)
+    STANDALONE.write_text('<!doctype html><html lang="en"><head><meta charset="utf-8">' + head
+                          + "</head><body>" + body + "</body></html>")   # open this one in a browser
     el = [s for s in stocks if s["eligible"]]
     print(f"as of {as_of.date()}: {len(stocks)} scanned, {len(el)} eligible. Top 10:")
     for s in el[:10]:
         print(f"  {s['rank']:2d} {s['ticker']:6s} {s['score']:5.1f}  Q{s['quality']:3.0f} V{s['value']:3.0f} T{s['timing']:3.0f}  "
               f"dip {s['dip']:+.0f}%  P/E {s['pe']}  flags {s['n_flags']}  {s['verdict']}")
-    print(f"wrote {OUT} ({OUT.stat().st_size / 1024:.0f} KB)")
+    print(f"wrote {OUT} and {STANDALONE} ({OUT.stat().st_size / 1024:.0f} KB)")
 
 
 if __name__ == "__main__":
