@@ -265,8 +265,9 @@ const PROMPTS = {
   qr: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Quality Analyst, replying. The Risk Officer and the Skeptic have attacked your shortlist. Rebut or concede, name by name.\n\n${briefText(b)}\n\nYour memo:\n"""${memos.q}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nFigures for the names in dispute:\n${cands.filter(s => tick(cands, [memos.q, memos.r, memos.s]).includes(s.ticker)).map(SLICE.q).join('\n')}\n\nAt most 120 words. For each name they challenged, either concede it (say so plainly) or defend it with a figure they ignored. Say which ONE name you now put forward as your replacement for anything you conceded.`,
   vr: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Value Analyst, replying. You have now seen the Quality Analyst's memo and the challenges from the Risk Officer and the Skeptic.\n\n${briefText(b)}\n\nYour memo:\n"""${memos.v}"""\n\nQuality Analyst:\n"""${memos.q}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nFigures for the names in dispute:\n${cands.filter(s => tick(cands, [memos.q, memos.v, memos.r, memos.s]).includes(s.ticker)).map(SLICE.v).join('\n')}\n\nAt most 120 words. Name the Quality Analyst's picks you refuse on price and the one you accept despite the price, with the figure. Concede any of your own picks the Risk Officer rightly cut. Propose the final list of no more than ${b.npos + 2} names you could both live with.`,
   c: (b, cands, memos, extra) => `${RULES}\n\nYOUR SEAT: The Chair. Write the allocation for this person from the candidate list, honouring the Risk Officer's constraint and caps, the person's index-fund share (${Math.round(b.index*100)}% of the total; you may raise it, never lower it), exactly ${b.npos} individual stocks unless the memos give a strong reason for fewer, and the person's preferences. Weights are shares of the WHOLE amount and must sum to 1 with the index fund and any cash. Where the seats disagreed, decide and say why in the summary. You may only include stocks that at least one analyst put forward in the memos or replies below; a name no analyst examined will be sent back by the vote.\n\n${briefText(b)}\n\n${dataText(cands, 'c')}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n${memos.qr ? `\nQuality Analyst's reply:\n"""${memos.qr}"""\n` : ''}${memos.vr ? `\nValue Analyst's reply:\n"""${memos.vr}"""\n` : ''}${extra || ''}\nReply with only a JSON object, no other text, shaped exactly like this example:\n{"summary": "two or three plain sentences (max 70 words) on the shape of the portfolio, which seat prevailed on the main dispute, and why", "index_weight": 0.5, "cash_weight": 0.0, "positions": [{"ticker": "XXXX", "weight": 0.1, "why": "one concrete reason under 20 words citing a figure"}], "risks": ["three short sentences, the most likely ways this loses money"], "watch": ["two short sentences: what to check before buying, e.g. earnings dates and the news behind the dip"], "dissent_expected": "one sentence on which seat will object and why"}`,
-  vote: (id, b, chair, memos) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. The Chair proposes for this person (${money(b.amount)}, horizon ${b.horizon}, worst tolerable year ${b.loss}): index fund ${Math.round((chair.index_weight||0)*100)}%, cash ${Math.round((chair.cash_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}. Chair's summary: "${chair.summary}".\n\nWhat you said in the meeting:\n"""${memos[id] || ''}"""\n\nReply with only a JSON object like {"vote": "approve", "note": "one sentence under 30 words naming the stock or constraint at issue"} where vote is "approve" or "dissent". Dissent if a point you made was ignored; do not dissent out of habit.`,
-  revise: (dissents) => `\nTHE VOTE went against the draft. Dissents:\n${dissents.map(d => `- ${seat(d.id).name}: ${d.note}`).join('\n')}\n\nRevise the allocation to answer the dissents where they are sound (swap or reweight named stocks), keep the same JSON shape, and in the summary say exactly what you changed and what you refused to change.`,
+  vote: (id, b, chair, memos) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. The Chair proposes for this person (${money(b.amount)}, horizon ${b.horizon}, worst tolerable year ${b.loss}): index fund ${Math.round((chair.index_weight||0)*100)}%, cash ${Math.round((chair.cash_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}. Chair's summary: "${chair.summary}".\n\nWhat you said in the meeting:\n"""${memos[id] || ''}"""\n\nReply with only a JSON object like {"vote": "approve", "note": "one sentence under 30 words naming the stock or constraint at issue"} where vote is "approve" or "dissent". Approve unless a constraint you set was broken or a stock you rejected on a stated figure is included. A different but reasonable choice from yours is NOT grounds for dissent; say what you would have preferred in the note and approve.`,
+  revise: (dissents) => `\nTHE VOTE went against the draft. Dissents, each with the one change that would win that seat's vote:\n${dissents.map(d => `- ${seat(d.id).name}: ${d.note}${d.ask ? ' -> would approve if: ' + d.ask : ''}`).join('\n')}\n\nRevise the allocation to satisfy those asks wherever they do not break the brief or the Risk Officer's caps (swap or reweight the named stocks exactly as asked), keep the same JSON shape, and in the summary say exactly what you changed and, if you refused an ask, why.`,
+  ask: (id, b, chair, note) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. You dissented from the Chair's allocation (index fund ${Math.round((chair.index_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}) saying: "${note}". Reply with only a JSON object like {"change": "one specific, minimal change under 25 words, naming tickers and weights, that would win your approval"}.`,
 };
 
 /* ---------- rendering ---------- */
@@ -409,6 +410,15 @@ async function convene(){
         if (adopted || isFinal) break;
       }
       const dissents = vs.filter(v => v.vote === 'dissent');
+      if (dissents.some(d => d.id !== 'r' || !d.note.startsWith('The draft includes'))) {
+        roundHead(round++, 'What would win the dissenting votes');
+        $('#live').textContent = 'Asking the dissenters';
+        await Promise.all(dissents.map(async d => {
+          try { const a = await sample.json(PROMPTS.ask(d.id, b, chair, d.note), { signal: ctl.signal, modelTier: 'quick', cache: false }); d.ask = String(a.change || '').slice(0, 200); }
+          catch (e) { if (e.code === 'cancelled') throw e; }
+          const el = memoCard(d.id, 'what would win my vote'); setBody(el, d.ask || d.note, true);
+        }));
+      }
       roundHead(round++, 'Revision after ' + dissents.length + ' dissent' + (dissents.length > 1 ? 's' : ''));
       const el2 = memoCard('c'); setBody(el2, '', false); $('#live').textContent = 'The Chair is revising';
       previous = chair;
@@ -419,7 +429,32 @@ async function convene(){
     const yes = vs.filter(v => v.vote === 'approve').length, tally = yes + ' of 4 in favour';
     const fin = renderDecision(b, chair, {id: 'decision', title: adopted ? 'Adopted, ' + tally : 'Not adopted, ' + tally, heading: adopted ? 'Adopted allocation' : 'The committee did not adopt this', previous});
     for (const v of vs) setVote('decision', v.id, v);
-    if (!adopted) { const note = document.createElement('p'); note.className = 'status bad'; note.style.marginTop = '14px'; note.textContent = 'Fewer than three seats backed the Chair after ' + revisions + ' revision' + (revisions === 1 ? '' : 's') + '. Read the dissents: this is the committee telling you the brief and the candidates do not fit. Change the brief and convene again.'; fin.querySelector('.actions').before(note); }
+    if (!adopted) {
+      const note = document.createElement('p'); note.className = 'status bad'; note.style.marginTop = '14px';
+      note.textContent = 'Fewer than three seats backed the Chair after ' + revisions + ' revision' + (revisions === 1 ? '' : 's') + '. The allocation above is the Chair\'s final draft with the dissents attached: read them, then either try once more, change the brief, or take the Chair\'s view with the objections in mind.';
+      fin.querySelector('.actions').before(note);
+      const more = document.createElement('button'); more.type = 'button'; more.textContent = 'Try once more'; fin.querySelector('.actions').prepend(more);
+      more.onclick = async () => {
+        more.disabled = true; $('#go').disabled = true; $('#stop').hidden = false; $('#state').textContent = 'in session'; $('#state').classList.add('on'); ctl = new AbortController();
+        try {
+          const dissents = vs.filter(v => v.vote === 'dissent');
+          roundHead(round++, 'What would win the dissenting votes');
+          await Promise.all(dissents.map(async d => { try { const a = await sample.json(PROMPTS.ask(d.id, b, chair, d.note), { signal: ctl.signal, modelTier: 'quick', cache: false }); d.ask = String(a.change || '').slice(0, 200); } catch (e) { if (e.code === 'cancelled') throw e; } const el = memoCard(d.id, 'what would win my vote'); setBody(el, d.ask || d.note, true); }));
+          roundHead(round++, 'One more revision');
+          const el3 = memoCard('c'); setBody(el3, '', false);
+          const prev = chair;
+          chair = normalise(b, await sample.json(PROMPTS.c(b, cands, memos, PROMPTS.revise(dissents)), { signal: ctl.signal, modelTier: 'default', cache: false })); setBody(el3, chair.summary || '', true);
+          const d2 = renderDecision(b, chair, {id: 'again' + round, title: 'Further revision', heading: 'Revised allocation', previous: prev, final: false});
+          roundHead(round++, 'Vote');
+          const v2 = await votes(d2, chair); const y2 = v2.filter(v => v.vote === 'approve').length;
+          const fid = 'final' + round; const f2 = renderDecision(b, chair, {id: fid, title: (y2 >= 3 ? 'Adopted, ' : 'Not adopted, ') + y2 + ' of 4 in favour', heading: y2 >= 3 ? 'Adopted allocation' : 'The committee still did not adopt this', previous: prev});
+          for (const v of v2) setVote(fid, v.id, v);
+          if (y2 < 3) { const n2 = document.createElement('p'); n2.className = 'status bad'; n2.style.marginTop = '14px'; n2.textContent = 'Still short of three seats. Change the brief and convene again, or take the Chair\'s view with the objections in mind.'; f2.querySelector('.actions').before(n2); }
+          vs = v2;
+        } catch (e) { $('#status').className = 'status bad'; $('#status').textContent = copyFor(e.code); }
+        finally { $('#go').disabled = false; $('#stop').hidden = true; $('#state').textContent = 'adjourned'; $('#state').classList.remove('on'); }
+      };
+    }
     $('#live').textContent = 'Session complete';
   } catch (e) {
     $('#status').className = 'status ' + (e.code === 'cancelled' ? '' : 'bad'); $('#status').textContent = copyFor(e.code);
