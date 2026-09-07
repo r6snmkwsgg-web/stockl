@@ -16,7 +16,7 @@ import pandas as pd
 TEMPLATE = Path("committee_template.html")
 OUT = Path("site/committee.html")
 STANDALONE = Path("site/ledger_committee.html")
-TOP_N = 48
+TOP_N = 400   # all eligible stocks; the committee, not the score, does the choosing
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     el = [s for s in payload["stocks"] if s["eligible"]][:TOP_N]
     keep = ["ticker", "name", "sector", "universe", "rank", "score", "quality", "value", "timing", "verdict", "price", "mcap",
             "dip", "fresh", "days_since_high", "above_200", "pe", "pe_pct_5y", "ps", "fcf_yield", "earnings_yield", "roe",
-            "net_margin", "rev_growth", "ni_growth", "debt_to_equity", "ret1y", "ret3y_vs_spy", "vol60", "flags", "financial", "spark"]
+            "net_margin", "fcf_margin", "rev_growth", "ni_growth", "debt_to_equity", "ret1y", "ret3y_vs_spy", "vol60", "flags", "financial", "spark", "revenue_ttm", "net_income_ttm"]
     stocks = [{k: s.get(k) for k in keep} for s in el]
     for s in stocks:
         s["spark"] = [v for v in s["spark"][::4]] if s.get("spark") else []   # ~13 points, enough for a mini line

@@ -68,7 +68,14 @@ a{color:var(--ivory-2)}
 .minutes-head .state.on::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:8px;vertical-align:middle;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.minutes-head .state.on::before{animation:none}.memo{animation:none!important}}
+.round{display:flex;align-items:center;gap:12px;margin:30px 0 4px;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.round::after{content:"";flex:1;height:1px;background:var(--rule)}
+.round b{color:var(--ivory-2);font-weight:500}
 .memo{border-left:2px solid var(--seat);padding:14px 0 18px 20px;margin:18px 0 0;animation:rise .5s ease both}
+.memo.reply{margin-left:26px}
+.memo .who .re{font-size:12px;color:var(--ink-3);font-style:italic}
+.diff{margin:10px 0 0;padding:0;list-style:none;font-size:13px;color:var(--ink-2)}
+.diff li{margin:2px 0} .diff .out{color:var(--bad)} .diff .in{color:var(--good)}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .memo .who{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .memo .seal{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--seat);color:var(--seat);display:grid;place-items:center;font-family:var(--display);font-size:15px;flex:none}
@@ -156,6 +163,9 @@ footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;ma
       <label class="check"><input type="checkbox" id="pVol" checked> Skip anything flagged very volatile</label>
       <label class="check"><input type="checkbox" id="pDip"> Only stocks in a fresh pull-back</label>
       <label class="check"><input type="checkbox" id="pBig" checked> Only today&rsquo;s largest companies (not the fallen list)</label></div>
+    <div class="field"><label for="own">Stocks you already own or want left out (tickers)</label><input id="own" type="text" placeholder="e.g. NVDA, AAPL" style="background:var(--ground);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:8px 10px;color:var(--ink);width:100%"></div>
+    <div class="field"><label for="pace">Session</label>
+      <select id="pace"><option value="full" selected>Full deliberation: memos, challenge, rebuttal, draft, vote, revision (about 3 minutes)</option><option value="quick">Quick: memos, draft, vote (about a minute)</option></select></div>
     <div class="field"><label for="notes">Anything else the committee should know</label><textarea id="notes" maxlength="400" placeholder="e.g. I already own a lot of Nvidia. I want to understand every pick in one sentence."></textarea></div>
     <button class="cta" id="go">Convene the committee</button>
     <button class="cta secondary" id="stop" hidden>Stop the session</button>
@@ -164,7 +174,7 @@ footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;ma
 
   <section aria-label="Minutes">
     <div class="minutes-head"><h2>Minutes</h2><span class="state" id="state">not in session</span></div>
-    <div id="minutes"><p class="empty"><b>Fill in the brief and convene.</b> The Quality Analyst and the Value Analyst read the numbers first, the Risk Officer and the Skeptic answer them, and the Chair writes the allocation. Then every seat votes. It takes a minute or two; the memos appear as they are written.</p></div>
+    <div id="minutes"><p class="empty"><b>Fill in the brief and convene.</b> The Quality Analyst and the Value Analyst write blind to each other from different slices of the filings, with no ranking to lean on. The Risk Officer and the Skeptic attack their lists. The analysts rebut, conceding or defending name by name. The Chair drafts, every seat votes, and dissent forces a revision. Memos appear as they are written; a full session takes about three minutes.</p></div>
     <p class="status" id="live" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
   </section>
 </main>
@@ -177,7 +187,8 @@ footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;ma
     <li><b>Value Analyst</b> judges the prices: cheap or dear against each company&rsquo;s own past and its peers.</li>
     <li><b>Risk Officer</b> fits the picks to you: how much you can lose, how long you can wait, how concentrated it is.</li>
     <li><b>The Skeptic</b> argues against the whole thing, using the record: the top picks beat the index about half the time.</li>
-    <li><b>The Chair</b> writes the allocation and takes the vote.</li>
+    <li><b>The Chair</b> writes the allocation, takes the vote, and must revise if seats dissent.</li>
+    <li>No seat is shown the Ledger&rsquo;s own score. The candidate list is every scored stock, in sector order, so the committee builds its own ranking each time; change the brief and the argument changes.</li>
   </ul>
   <p>Running a session spends a small amount of your own Claude usage; the page asks once. Nothing you type is stored. And plainly: this is a study tool that shows you how a disciplined argument over real numbers looks. It is not investment advice, it does not know your taxes or your life, and the record it argues from is a coin flip per stock.</p>
 </section>
@@ -198,7 +209,7 @@ const SEATS = [
   {id:'s', name:'The Skeptic', job:'Why this will fail', color:'var(--s)', seal:'S'},
   {id:'c', name:'The Chair', job:'Writes the allocation', color:'var(--c)', seal:'C'},
 ];
-const seat = id => SEATS.find(s => s.id === id);
+const seat = id => SEATS.find(s => s.id === String(id)[0]);   // 'qr' (a reply) belongs to seat 'q'
 $('#eyebrow').innerHTML = `In session &middot; numbers as of ${esc(DATA.as_of)} &middot; SPY ${DATA.market.ok ? 'above' : 'below'} its 200-day average`;
 $('#seats').innerHTML = SEATS.map(s => `<div class="seat" id="seat-${s.id}" style="--seat:${s.color}"><div class="seal">${s.seal}</div><b>${s.name}</b><span>${s.job}</span></div>`).join('');
 $('#foot').textContent = `Candidates: the ${DATA.stocks.length} highest-scoring stocks on the Bargain Ledger as of ${DATA.as_of}. Record: point-in-time test ${DATA.record.first || ''} to ${DATA.record.last || ''}. Not investment advice.`;
@@ -209,97 +220,125 @@ $('#index').oninput = e => $('#indexv').textContent = e.target.value + '%';
 /* ---------- the brief ---------- */
 function brief(){
   const avoid = [...document.querySelectorAll('#avoid .chip[aria-pressed="true"]')].map(b => b.textContent);
+  const own = ($('#own').value || '').toUpperCase().split(/[^A-Z.\-]+/).filter(Boolean);
   return {
     amount: Math.max(100, +$('#amount').value || 3000), horizon: $('#horizon').value, loss: $('#loss').value,
-    npos: +$('#npos').value, index: +$('#index').value / 100, avoid,
+    npos: +$('#npos').value, index: +$('#index').value / 100, avoid, own, pace: $('#pace').value,
     dividends: $('#pDiv').checked, noVol: $('#pVol').checked, freshOnly: $('#pDip').checked, bigOnly: $('#pBig').checked,
     notes: $('#notes').value.trim().slice(0, 400),
   };
 }
 function candidates(b){
-  return DATA.stocks.filter(s => !b.avoid.includes(s.sector) && (!b.noVol || !s.flags.some(f => f.startsWith('very volatile')))
+  const list = DATA.stocks.filter(s => !b.avoid.includes(s.sector) && !b.own.includes(s.ticker) && (!b.noVol || !s.flags.some(f => f.startsWith('very volatile')))
     && (!b.freshOnly || s.fresh) && (!b.bigOnly || s.universe === 'top100'));
+  // no score order: sector then ticker, so the committee does its own ranking
+  return list.sort((a, c) => a.sector.localeCompare(c.sector) || a.ticker.localeCompare(c.ticker));
 }
 function briefText(b){
-  return `THE BRIEF\n- Amount: ${money(b.amount)}\n- Time it can stay invested: ${b.horizon}\n- Worst single year they could sit through without selling: ${b.loss}\n- Individual stocks wanted: ${b.npos}\n- Share to keep in a plain S&P 500 index fund: ${Math.round(b.index*100)}%\n- Sectors to avoid: ${b.avoid.length ? b.avoid.join(', ') : 'none'}\n- Preferences: ${[b.dividends && 'prefers dividend payers', b.noVol && 'skip very volatile names', b.freshOnly && 'only fresh pull-backs', b.bigOnly && 'only today\'s largest companies'].filter(Boolean).join('; ') || 'none stated'}\n- In their words: ${b.notes || '(nothing added)'}`;
+  return `THE BRIEF\n- Amount: ${money(b.amount)}\n- Time it can stay invested: ${b.horizon}\n- Worst single year they could sit through without selling: ${b.loss}\n- Individual stocks wanted: ${b.npos}\n- Share to keep in a plain S&P 500 index fund: ${Math.round(b.index*100)}%\n- Sectors to avoid: ${b.avoid.length ? b.avoid.join(', ') : 'none'}\n- Already owned or excluded: ${b.own.length ? b.own.join(', ') : 'none'}\n- Preferences: ${[b.dividends && 'prefers dividend payers', b.noVol && 'skip very volatile names', b.freshOnly && 'only fresh pull-backs', b.bigOnly && 'only today\'s largest companies'].filter(Boolean).join('; ') || 'none stated'}\n- In their words: ${b.notes || '(nothing added)'}`;
 }
-function dataText(cands){
-  const line = s => `${s.ticker} ${s.name} | ${s.sector} | score ${s.score} (quality ${s.quality}, value ${s.value}, timing ${s.timing}) | $${s.price} | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh, set ' + s.days_since_high + ' days ago)' : ''} | ${pct(s.above_200,0,true)} vs 200-day | P/E ${isNum(s.pe) ? s.pe : 'n/a'}${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? ' (cheaper than ' + (100 - s.pe_pct_5y) + '% of its own 5 yrs)' : ' (pricier than ' + s.pe_pct_5y + '% of its own 5 yrs)') : ''} | ${s.financial ? 'financial: no FCF' : 'FCF yield ' + pct(s.fcf_yield,1)} | ROE ${pct(s.roe)} | revenue ${pct(s.rev_growth,0,true)} | debt/equity ${isNum(s.debt_to_equity) ? s.debt_to_equity : 'n/a'} | 1-yr ${pct(s.ret1y,0,true)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | volatility ${pct(s.vol60)} | flags: ${s.flags.length ? s.flags.join('; ') : 'none'}`;
-  return `CANDIDATES (${cands.length} stocks, ranked by the Ledger score; all figures from SEC filings and prices as of ${DATA.as_of})\n` + cands.map(line).join('\n');
+const n0 = (v, d=0) => isNum(v) ? v.toFixed(d) : 'n/a';
+/* each seat gets a different slice of the filings, and nobody gets the Ledger score */
+const SLICE = {
+  q: s => `${s.ticker} ${s.name} | ${s.sector} | ROE ${pct(s.roe)} | ${s.financial ? 'net margin ' + pct(s.net_margin) : 'free cash ' + pct(s.fcf_margin) + ' of revenue'} | revenue ${pct(s.rev_growth,0,true)} | profit ${pct(s.ni_growth,0,true)} | debt/equity ${n0(s.debt_to_equity,2)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | revenue ${money(s.revenue_ttm/1e9)}B | flags: ${s.flags.filter(f => /losing|shrinking|debt|one-off|stale/.test(f)).join('; ') || 'none'}`,
+  v: s => `${s.ticker} | ${s.sector} | $${s.price} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? ' (cheaper than ' + (100 - s.pe_pct_5y) + '% of its own 5 yrs)' : ' (pricier than ' + s.pe_pct_5y + '% of its own 5 yrs)') : ''} | P/S ${n0(s.ps,1)} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | earnings yield ${pct(s.earnings_yield,1)} | 1-yr ${pct(s.ret1y,0,true)} | ${pct(-s.dip)} below 52-wk high | flags: ${s.flags.filter(f => /expensive|priced above|one-off/.test(f)).join('; ') || 'none'}`,
+  r: s => `${s.ticker} | ${s.sector} | market value ${money(s.mcap/1e9)}B | volatility ${pct(s.vol60)}/yr | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh)' : ' (old high)'} | ${pct(s.above_200,0,true)} vs 200-day | debt/equity ${n0(s.debt_to_equity,2)} | 1-yr ${pct(s.ret1y,0,true)} | flags: ${s.flags.join('; ') || 'none'}`,
+  c: s => `${s.ticker} ${s.name} | ${s.sector} | $${s.price} | ROE ${pct(s.roe)} | rev ${pct(s.rev_growth,0,true)} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? ' (' + (s.pe_pct_5y <= 50 ? 'cheaper' : 'pricier') + ' than ' + (s.pe_pct_5y <= 50 ? 100 - s.pe_pct_5y : s.pe_pct_5y) + '% of own 5 yrs)' : ''} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | ${pct(-s.dip)} below high${s.fresh ? ' (fresh)' : ''} | vol ${pct(s.vol60)} | D/E ${n0(s.debt_to_equity,2)} | flags: ${s.flags.join('; ') || 'none'}`,
+};
+function dataText(cands, who){
+  return `CANDIDATES (${cands.length} companies, listed by sector, NOT ranked; every figure is from SEC filings and prices as of ${DATA.as_of})\n` + cands.map(SLICE[who]).join('\n');
 }
 function recordText(){
   const r = DATA.record, d = DATA.dist;
-  return `THE RECORD (point-in-time test, ${r.first} to ${r.last}, dividends included): a top-10 pick beat SPY over the next year ${Math.round(r.per_pick_beat_spy*100)}% of the time and averaged ${(r.per_pick_vs_spy*100).toFixed(1)} points vs SPY but only ${(r.per_pick_vs_avg*100).toFixed(1)} points vs the average candidate (the candidate list itself beat SPY). A 10-stock basket re-picked quarterly compounded at ${(r.basket_cagr*100).toFixed(1)}%/yr vs SPY ${(r.spy_cagr*100).toFixed(1)}%, worst fall ${Math.round(r.basket_maxdd*100)}% vs SPY ${Math.round(r.spy_maxdd*100)}%, beat SPY in ${Math.round(r.quarters_beat*100)}% of quarters. Picks from once-large companies that later fell beat SPY only ${Math.round(r.fallen_beat*100)}% of the time. The quarterly edge over the average candidate has a t-statistic of ${r.edge_vs_avg ? r.edge_vs_avg.t.toFixed(2) : 'n/a'} (not distinguishable from luck). In a bad year (worst 1 in 10) the basket lost ${Math.round(-d.basket[0]*100)}%.`;
+  return `THE RECORD (point-in-time test, ${r.first} to ${r.last}, dividends included): a top pick from this kind of screen beat SPY over the next year ${Math.round(r.per_pick_beat_spy*100)}% of the time and averaged ${(r.per_pick_vs_spy*100).toFixed(1)} points vs SPY but only ${(r.per_pick_vs_avg*100).toFixed(1)} points vs the average candidate (the candidate list itself beat SPY). A 10-stock basket re-picked quarterly compounded at ${(r.basket_cagr*100).toFixed(1)}%/yr vs SPY ${(r.spy_cagr*100).toFixed(1)}%, worst fall ${Math.round(r.basket_maxdd*100)}% vs SPY ${Math.round(r.spy_maxdd*100)}%. Picks from once-large companies that later fell beat SPY only ${Math.round(r.fallen_beat*100)}% of the time. The quarterly edge over the average candidate has a t-statistic of ${r.edge_vs_avg ? r.edge_vs_avg.t.toFixed(2) : 'n/a'} (not distinguishable from luck). In a bad year (worst 1 in 10) the basket lost ${Math.round(-d.basket[0]*100)}%.`;
 }
-const RULES = `You are one seat on an investment committee reviewing a real, numbers-only candidate list for one person. Write as a seasoned human analyst would in a meeting: direct, specific, plain English, no headings, no bullet symbols, no markdown, no mention of being an AI. Refer to stocks by ticker. Use only the numbers given. Never promise returns. Stay under the word limit.`;
+const RULES = `You are one seat on an investment committee reviewing a real, numbers-only candidate list for one person. Write as a seasoned human analyst would speak in a meeting: direct, specific, plain English, no headings, no bullet symbols, no markdown, never mention being an AI. Refer to companies by ticker. Use only the figures given and quote them. Never promise returns. Take positions; no hedging filler.`;
+const tick = (cands, texts) => { const set = new Set(cands.map(s => s.ticker)); const found = new Set(); for (const t of texts) for (const m of String(t).matchAll(/\b[A-Z]{2,5}(?:-B)?\b/g)) if (set.has(m[0])) found.add(m[0]); return [...found]; };
 const PROMPTS = {
-  q: (b, cands) => `${RULES}\n\nYOUR SEAT: Quality Analyst. Your only question is whether each candidate is a genuinely strong business: return on equity, how much revenue becomes free cash, revenue growth, debt, the three-year record. Ignore price and timing; others cover those.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nWrite a memo of at most 170 words: name the ${Math.min(8, cands.length)} strongest businesses for this brief with one concrete reason each (cite a figure), name one popular candidate you refuse and why, and end with one sentence on what the Value Analyst should watch for.`,
-  v: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Value Analyst. Your only question is price: is each candidate cheap or dear against its own five-year history and against the others (P/E, free-cash-flow yield, earnings yield). Quality is someone else's job.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nThe Quality Analyst wrote:\n"""${memos.q}"""\n\nWrite a memo of at most 170 words: from the Quality Analyst's shortlist, which are reasonably priced and which are expensive against their own history (cite the figures); add up to two candidates they overlooked that are cheap AND decent; say which single name you would not pay today's price for.`,
-  r: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Risk Officer. Your job is fitting the portfolio to this person, not picking winners: their worst tolerable year (${b.loss}), their horizon (${b.horizon}), their ${money(b.amount)}, concentration by sector and by stock, volatility figures, the red flags in the data, and the index-fund share they asked for.\n\n${briefText(b)}\n\n${dataText(cands)}\n\n${recordText()}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nWrite a memo of at most 170 words. State a hard cap on any one sector and any one stock as a share of the whole amount, say whether the index-fund share they chose is enough for a person who can only sit through ${b.loss}, name any shortlisted stock that must be cut for risk (cite the volatility or flag), and give the Chair one constraint it may not break.`,
-  s: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Skeptic. You argue against the committee using the record and the known weaknesses of this method: the candidate list is partly hindsight (today's largest companies), the quality score chases the last cycle (it loved oil in January 2023 and Meta and AMD in January 2022), a dip in a strong company is only a bargain if the company stays strong, and the top picks beat the index about half the time.\n\n${briefText(b)}\n\n${recordText()}\n\nCandidate list summary: ${cands.slice(0, 20).map(s => s.ticker + ' (' + s.sector + ', score ' + s.score + ')').join(', ')}.\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nWrite at most 150 words: name the two picks most likely to be the ones that fail and why, say what would have to be true for this portfolio to beat a plain index fund, and state plainly what the record says the odds are. Be fair: if something in the memos is sound, say so in one sentence.`,
-  c: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Chair. Write the final allocation for this person from the candidate list, honouring the Risk Officer's constraint, the person's index-fund share (${Math.round(b.index*100)}% of the total; you may raise it, never lower it), exactly ${b.npos} individual stocks unless the memos give a strong reason for fewer, no sector above the Risk Officer's cap, and the person's stated preferences. Weights are shares of the WHOLE amount and must sum to 1 with the index fund and any cash.\n\n${briefText(b)}\n\n${dataText(cands)}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nReply with only a JSON object, no other text, shaped exactly like this example:\n{"summary": "two or three plain sentences (max 60 words) on the shape of the portfolio and why", "index_weight": 0.5, "cash_weight": 0.0, "positions": [{"ticker": "XXXX", "weight": 0.1, "why": "one concrete reason under 20 words citing a figure"}], "risks": ["three short sentences, the most likely ways this loses money"], "watch": ["two short sentences: what to check before buying, e.g. earnings dates and the news behind the dip"], "dissent_expected": "one sentence on which seat will object and why"}`,
-  vote: (id, b, chair) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. The Chair proposes for this person (${money(b.amount)}, horizon ${b.horizon}, worst tolerable year ${b.loss}): index fund ${Math.round((chair.index_weight||0)*100)}%, cash ${Math.round((chair.cash_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}. Chair's summary: "${chair.summary}". Your earlier memo is what you said before.\n\nReply with only a JSON object like {"vote": "approve", "note": "one sentence under 25 words"} where vote is "approve" or "dissent". Dissent only if a constraint you cared about was broken.`,
+  q: (b, cands) => `${RULES}\n\nYOUR SEAT: Quality Analyst. Your only question is which of these are genuinely strong businesses, judged from the figures: return on equity, how much revenue becomes free cash, growth, debt, the three-year record. Price is not your concern. You must build your own ranking; the list is not ranked.\n\n${briefText(b)}\n\n${dataText(cands, 'q')}\n\nWrite a memo of at most 190 words. Name your ${Math.min(8, cands.length)} strongest businesses for this brief, each with one figure that earns its place. Include at least two from different sectors than your top pick. Name two well-known names on the list you deliberately leave out and the figure that disqualifies them. End with the single business you would defend against any objection.`,
+  v: (b, cands) => `${RULES}\n\nYOUR SEAT: Value Analyst. Your only question is price: which candidates are cheap against their own five-year history and against the others, on P/E, price-to-sales, free-cash-flow yield and earnings yield. Business quality is not your concern; you have not seen the Quality Analyst's memo and must form your own view.\n\n${briefText(b)}\n\n${dataText(cands, 'v')}\n\nWrite a memo of at most 190 words. Name the ${Math.min(8, cands.length)} best-priced candidates with the figure that shows it. Name three widely admired names that are expensive against their own history and say what you would need to see to pay up. End with the one price you find most obviously wrong, cheap or dear.`,
+  r: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Risk Officer. Your job is fitting the portfolio to this person: their worst tolerable year (${b.loss}), horizon (${b.horizon}), ${money(b.amount)}, concentration by sector and stock, volatility, red flags, and the index-fund share they asked for.\n\n${briefText(b)}\n\n${dataText(cands, 'r')}\n\n${recordText()}\n\nQuality Analyst's memo:\n"""${memos.q}"""\n\nValue Analyst's memo:\n"""${memos.v}"""\n\nWrite a memo of at most 190 words. Set a hard cap on any one sector and any one stock as a share of the whole amount. Say whether ${Math.round(b.index*100)}% in the index fund is enough for someone who can only sit through ${b.loss}, and if not, the number you insist on. Name at least two shortlisted stocks the other two analysts must drop for risk, quoting the volatility or flag. Point out where the two memos contradict each other. State one constraint the Chair may not break.`,
+  s: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: The Skeptic. You argue against the committee using the record and this method's known weaknesses: the candidate list is partly hindsight (today's largest companies), profitability-and-momentum screens chase the last cycle (this one loved oil in January 2023 and Meta and AMD in January 2022), a dip in a strong company is only a bargain if the company stays strong, and top picks beat the index about half the time.\n\n${briefText(b)}\n\n${recordText()}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nWrite at most 170 words. Name the three shortlisted stocks most likely to be the ones that fail and the specific reason for each. Say what would have to be true for this portfolio to beat a plain index fund. Quote the record's odds plainly. Then concede, in one sentence, the strongest point made by another seat.`,
+  qr: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Quality Analyst, replying. The Risk Officer and the Skeptic have attacked your shortlist. Rebut or concede, name by name.\n\n${briefText(b)}\n\nYour memo:\n"""${memos.q}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nFigures for the names in dispute:\n${cands.filter(s => tick(cands, [memos.q, memos.r, memos.s]).includes(s.ticker)).map(SLICE.q).join('\n')}\n\nAt most 120 words. For each name they challenged, either concede it (say so plainly) or defend it with a figure they ignored. Say which ONE name you now put forward as your replacement for anything you conceded.`,
+  vr: (b, cands, memos) => `${RULES}\n\nYOUR SEAT: Value Analyst, replying. You have now seen the Quality Analyst's memo and the challenges from the Risk Officer and the Skeptic.\n\n${briefText(b)}\n\nYour memo:\n"""${memos.v}"""\n\nQuality Analyst:\n"""${memos.q}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n\nFigures for the names in dispute:\n${cands.filter(s => tick(cands, [memos.q, memos.v, memos.r, memos.s]).includes(s.ticker)).map(SLICE.v).join('\n')}\n\nAt most 120 words. Name the Quality Analyst's picks you refuse on price and the one you accept despite the price, with the figure. Concede any of your own picks the Risk Officer rightly cut. Propose the final list of no more than ${b.npos + 2} names you could both live with.`,
+  c: (b, cands, memos, extra) => `${RULES}\n\nYOUR SEAT: The Chair. Write the allocation for this person from the candidate list, honouring the Risk Officer's constraint and caps, the person's index-fund share (${Math.round(b.index*100)}% of the total; you may raise it, never lower it), exactly ${b.npos} individual stocks unless the memos give a strong reason for fewer, and the person's preferences. Weights are shares of the WHOLE amount and must sum to 1 with the index fund and any cash. Where the seats disagreed, decide and say why in the summary.\n\n${briefText(b)}\n\n${dataText(cands, 'c')}\n\nQuality Analyst:\n"""${memos.q}"""\n\nValue Analyst:\n"""${memos.v}"""\n\nRisk Officer:\n"""${memos.r}"""\n\nThe Skeptic:\n"""${memos.s}"""\n${memos.qr ? `\nQuality Analyst's reply:\n"""${memos.qr}"""\n` : ''}${memos.vr ? `\nValue Analyst's reply:\n"""${memos.vr}"""\n` : ''}${extra || ''}\nReply with only a JSON object, no other text, shaped exactly like this example:\n{"summary": "two or three plain sentences (max 70 words) on the shape of the portfolio, which seat prevailed on the main dispute, and why", "index_weight": 0.5, "cash_weight": 0.0, "positions": [{"ticker": "XXXX", "weight": 0.1, "why": "one concrete reason under 20 words citing a figure"}], "risks": ["three short sentences, the most likely ways this loses money"], "watch": ["two short sentences: what to check before buying, e.g. earnings dates and the news behind the dip"], "dissent_expected": "one sentence on which seat will object and why"}`,
+  vote: (id, b, chair, memos) => `${RULES}\n\nYOUR SEAT: ${seat(id).name}. The Chair proposes for this person (${money(b.amount)}, horizon ${b.horizon}, worst tolerable year ${b.loss}): index fund ${Math.round((chair.index_weight||0)*100)}%, cash ${Math.round((chair.cash_weight||0)*100)}%, stocks ${chair.positions.map(p => p.ticker + ' ' + Math.round(p.weight*100) + '%').join(', ')}. Chair's summary: "${chair.summary}".\n\nWhat you said in the meeting:\n"""${memos[id] || ''}"""\n\nReply with only a JSON object like {"vote": "approve", "note": "one sentence under 30 words naming the stock or constraint at issue"} where vote is "approve" or "dissent". Dissent if a point you made was ignored; do not dissent out of habit.`,
+  revise: (dissents) => `\nTHE VOTE went against the draft. Dissents:\n${dissents.map(d => `- ${seat(d.id).name}: ${d.note}`).join('\n')}\n\nRevise the allocation to answer the dissents where they are sound (swap or reweight named stocks), keep the same JSON shape, and in the summary say exactly what you changed and what you refused to change.`,
 };
 
 /* ---------- rendering ---------- */
 const minutes = $('#minutes');
 let ctl = null, sample = null, session = 0;
 function clock(){ return new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}); }
-function memoCard(id){
+function roundHead(n, title){ const el = document.createElement('div'); el.className = 'round'; el.innerHTML = `<b>Round ${n}</b> ${title}`; minutes.appendChild(el); }
+function memoCard(id, reply){
   const s = seat(id);
-  const el = document.createElement('article'); el.className = 'memo'; el.style.setProperty('--seat', s.color); el.id = 'memo-' + id;
-  el.innerHTML = `<div class="who"><div class="seal">${s.seal}</div><div><b>${s.name}</b><br><span>${s.job}</span></div><span class="t">${clock()}</span></div><div class="body thinking">Reading the numbers</div>`;
-  minutes.appendChild(el); $('#seat-' + id).classList.add('live');
+  const el = document.createElement('article'); el.className = 'memo' + (reply ? ' reply' : ''); el.style.setProperty('--seat', s.color); el.id = 'memo-' + id + (reply ? '-r' : '');
+  el.innerHTML = `<div class="who"><div class="seal">${s.seal}</div><div><b>${s.name}</b><br><span>${reply ? '<span class="re">' + reply + '</span>' : s.job}</span></div><span class="t">${clock()}</span></div><div class="body thinking">Reading the numbers</div>`;
+  minutes.appendChild(el); $('#seat-' + s.id).classList.add('live');
   return el;
 }
-function setBody(el, text, done){ const b = el.querySelector('.body'); b.classList.toggle('thinking', !done && !text); b.textContent = text || (done ? '' : 'Reading the numbers'); if (done) $('#seat-' + el.id.slice(5)).classList.remove('live'); }
+function setBody(el, text, done){ const b = el.querySelector('.body'); b.classList.toggle('thinking', !done && !text); b.textContent = text || (done ? '' : 'Reading the numbers'); if (done) $('#seat-' + el.id.split('-')[1][0]).classList.remove('live'); }
 function fail(el, e){ const b = el.querySelector('.body'); b.classList.remove('thinking'); if (e.text) b.textContent = e.text; const m = document.createElement('p'); m.className = 'err'; m.textContent = copyFor(e.code); el.appendChild(m); }
-function copyFor(code){ return ({not_granted:'You declined to let this page use your Claude account, so the committee cannot sit. Reload to be asked again.', rate_limited:'Claude is busy right now. Wait a minute and convene again.', cancelled:'Session stopped.', invalid_json:'The Chair did not return a usable allocation. Convene again.', prompt_too_large:'The brief and data were too long for one call.', unavailable:'Claude could not be reached from this page.'})[code] || ('Something went wrong (' + code + ').'); }
+function copyFor(code){ return ({not_granted:'You declined to let this page use your Claude account, so the committee cannot sit. Reload to be asked again.', rate_limited:'Claude is busy right now. Wait a minute and convene again.', cancelled:'Session stopped.', invalid_json:'The Chair did not return a usable allocation. Convene again.', prompt_too_large:'The brief and data were too long for one call; exclude a sector and convene again.', unavailable:'Claude could not be reached from this page.'})[code] || ('Something went wrong (' + code + ').'); }
 function mini(spark, color){
   const v = (spark || []).filter(isNum); if (v.length < 2) return '';
   const lo = Math.min(...v), hi = Math.max(...v), W = 70, H = 22;
   const pts = v.map((y, i) => `${(i/(v.length-1)*W).toFixed(1)},${(H - 2 - (hi === lo ? H/2 : (y-lo)/(hi-lo)*(H-4))).toFixed(1)}`).join(' ');
   return `<svg class="mini" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/><circle cx="${W}" cy="${pts.split(' ').pop().split(',')[1]}" r="2" fill="${color}"/></svg>`;
 }
-function renderDecision(b, chair, example){
+function normalise(b, chair){
   const byT = Object.fromEntries(DATA.stocks.map(s => [s.ticker, s]));
   let pos = (chair.positions || []).filter(p => byT[p.ticker] && isNum(p.weight) && p.weight > 0).slice(0, 12);
   let idx = isNum(chair.index_weight) ? Math.max(b.index, Math.min(1, chair.index_weight)) : b.index;
   let cash = isNum(chair.cash_weight) ? Math.max(0, Math.min(0.5, chair.cash_weight)) : 0;
   const sumPos = pos.reduce((a, p) => a + p.weight, 0), room = Math.max(0, 1 - idx - cash);
   if (sumPos > 0) pos = pos.map(p => ({...p, weight: p.weight / sumPos * room})); else cash += room;
+  return {...chair, positions: pos, index_weight: idx, cash_weight: cash};
+}
+function renderDecision(b, chair, opts={}){
+  const byT = Object.fromEntries(DATA.stocks.map(s => [s.ticker, s]));
+  const pos = chair.positions, idx = chair.index_weight, cash = chair.cash_weight;
   const bars = [{lab:'S&P 500 index fund', sub:'the part that just tracks the market', w:idx, cls:'index'}]
     .concat(pos.map(p => ({lab:p.ticker, sub:byT[p.ticker].name, w:p.weight, cls:''})))
     .concat(cash > 0.001 ? [{lab:'Cash', sub:'left aside', w:cash, cls:'cash'}] : []);
   const maxW = Math.max(...bars.map(x => x.w), 0.01);
   const sectors = {}; for (const p of pos) sectors[byT[p.ticker].sector] = (sectors[byT[p.ticker].sector] || 0) + p.weight;
-  const topSector = Object.entries(sectors).sort((a, b) => b[1] - a[1])[0];
+  const topSector = Object.entries(sectors).sort((a, c) => c[1] - a[1])[0];
   const d = DATA.dist, stockPart = b.amount * (1 - idx - cash), indexPart = b.amount * idx;
   const row = (i) => `<tr><td>${['Bad year (worst 1 in 10)','Below-average year','Typical year','Good year','Great year (best 1 in 10)'][i]}</td><td class="r num">${money(stockPart*(1+d.basket[i]) + indexPart*(1+d.spy[i]) + b.amount*cash)}</td><td class="r num">${money(b.amount*(1+d.spy[i]))}</td></tr>`;
-  const el = document.createElement('section'); el.className = 'decision'; el.id = 'decision';
-  el.innerHTML = `${example ? '<span class="example-tag">Example session, no AI</span>' : ''}<p class="eyebrow">The Chair&rsquo;s decision &middot; ${money(b.amount)}</p><h2>Allocation</h2>
-    <p class="summary">${esc(chair.summary || '')}</p>
+  let diff = '';
+  if (opts.previous) {
+    const before = new Set(opts.previous.positions.map(p => p.ticker)), after = new Set(pos.map(p => p.ticker));
+    const out = [...before].filter(t => !after.has(t)), inn = [...after].filter(t => !before.has(t));
+    diff = `<ul class="diff">${out.map(t => `<li class="out">removed ${t}</li>`).join('')}${inn.map(t => `<li class="in">added ${t}</li>`).join('')}${Math.abs(opts.previous.index_weight - idx) > 0.005 ? `<li>index fund ${Math.round(opts.previous.index_weight*100)}% &rarr; ${Math.round(idx*100)}%</li>` : ''}${!out.length && !inn.length && Math.abs(opts.previous.index_weight - idx) <= 0.005 ? '<li>no names changed; weights adjusted</li>' : ''}</ul>`;
+  }
+  const el = document.createElement('section'); el.className = 'decision'; el.id = opts.id || 'decision';
+  el.innerHTML = `${opts.example ? '<span class="example-tag">Example session, no AI</span>' : ''}<p class="eyebrow">${opts.title || 'The Chair\u2019s decision'} &middot; ${money(b.amount)}</p><h2>${opts.heading || 'Allocation'}</h2>
+    <p class="summary">${esc(chair.summary || '')}</p>${diff}
     <div class="alloc">${bars.map(x => `<div class="bar ${x.cls}"><div class="lab">${esc(x.lab)}<small>${esc(x.sub)}</small></div><div class="track"><div class="fill" style="--w:${(x.w/maxW*100).toFixed(1)}%"></div></div><div class="pct">${(x.w*100).toFixed(0)}%</div><div class="usd">${money(b.amount*x.w)}</div></div>`).join('')}</div>
     ${topSector ? `<p class="status">Largest sector among the stocks: ${esc(topSector[0])} at ${(topSector[1]*100).toFixed(0)}% of the whole amount.</p>` : ''}
-    <table><thead><tr><th>Stock</th><th>Last year</th><th class="r">Score</th><th class="r">P/E</th><th class="r">From high</th><th>The Chair&rsquo;s reason</th></tr></thead><tbody>
-    ${pos.map(p => { const s = byT[p.ticker]; return `<tr><td><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} &middot; ${esc(s.sector)}</span></td><td>${mini(s.spark, 'var(--ivory-2)')}</td><td class="r num">${s.score}</td><td class="r num">${isNum(s.pe) ? s.pe.toFixed(1) : '\u2014'}</td><td class="r num">${pct(s.dip)}</td><td class="why">${esc(p.why || '')}</td></tr>`; }).join('')}
+    <table><thead><tr><th>Stock</th><th>Last year</th><th class="r">P/E</th><th class="r">ROE</th><th class="r">From high</th><th>The Chair&rsquo;s reason</th></tr></thead><tbody>
+    ${pos.map(p => { const s = byT[p.ticker]; return `<tr><td><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} &middot; ${esc(s.sector)}</span></td><td>${mini(s.spark, 'var(--ivory-2)')}</td><td class="r num">${isNum(s.pe) ? s.pe.toFixed(1) : '\u2014'}</td><td class="r num">${pct(s.roe)}</td><td class="r num">${pct(s.dip)}</td><td class="why">${esc(p.why || '')}</td></tr>`; }).join('')}
     </tbody></table>
     <div class="two"><div><h3>What could go wrong</h3><ul>${(chair.risks || []).slice(0, 4).map(r => `<li>${esc(r)}</li>`).join('')}</ul>
       <h3 style="margin-top:14px">Before buying</h3><ul>${(chair.watch || []).slice(0, 3).map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>
-      <div><h3>The vote</h3><ul class="votes" id="votes">${['q','v','r','s'].map(id => `<li style="--seat:${seat(id).color}"><div class="seal">${seat(id).seal}</div><div><b>${seat(id).name}</b><br><span class="vote pending" id="vote-${id}">voting</span></div><span class="note" id="note-${id}"></span></li>`).join('')}</ul>
+      <div><h3>The vote</h3><ul class="votes" id="votes-${el.id}">${['q','v','r','s'].map(id => `<li style="--seat:${seat(id).color}"><div class="seal">${seat(id).seal}</div><div><b>${seat(id).name}</b><br><span class="vote pending" id="vote-${el.id}-${id}">voting</span></div><span class="note" id="note-${el.id}-${id}"></span></li>`).join('')}</ul>
       ${chair.dissent_expected ? `<p class="status" style="margin-top:10px">Chair expects: ${esc(chair.dissent_expected)}</p>` : ''}</div></div>
-    <div class="record"><h3>What the record says about ${money(b.amount)} placed this way</h3>
+    ${opts.final !== false ? `<div class="record"><h3>What the record says about ${money(b.amount)} placed this way</h3>
       <p>The stock part follows the historical spread of a top-10 Ledger basket held one year (${d.n} past start dates, dividends included); the index part follows SPY. Past spread, not a forecast: the basket lost money in ${Math.round(d.lose*100)}% of years and its worst year was ${Math.round(d.worst*100)}%.</p>
       <table><thead><tr><th>Kind of year</th><th class="r">This portfolio</th><th class="r">All in SPY</th></tr></thead><tbody>${[0,1,2,3,4].map(row).join('')}</tbody></table></div>
-    <div class="actions"><button type="button" class="primary" id="copy">Copy the minutes</button><button type="button" id="again">Convene again</button></div>`;
+    <div class="actions"><button type="button" class="primary" id="copy">Copy the minutes</button><button type="button" id="again">Convene again</button></div>` : ''}`;
   minutes.appendChild(el);
-  $('#copy').onclick = async () => { try { await navigator.clipboard.writeText(minutesText()); $('#copy').textContent = 'Copied'; } catch { $('#copy').textContent = 'Could not copy'; } };
-  $('#again').onclick = () => { $('#go').click(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+  if (opts.final !== false) {
+    $('#copy').onclick = async () => { try { await navigator.clipboard.writeText(minutesText()); $('#copy').textContent = 'Copied'; } catch { $('#copy').textContent = 'Could not copy'; } };
+    $('#again').onclick = () => { $('#go').click(); window.scrollTo({top: 0, behavior: 'smooth'}); };
+  }
   el.scrollIntoView({behavior: 'smooth', block: 'start'});
-  return {pos, idx, cash};
+  return el;
 }
-function setVote(id, v){ const el = $('#vote-' + id); if (!el) return; const ok = String(v.vote).toLowerCase() === 'approve'; el.className = 'vote ' + (ok ? 'approve' : 'dissent'); el.textContent = ok ? 'approve' : 'dissent'; $('#note-' + id).textContent = v.note || ''; }
-function minutesText(){ return [...minutes.querySelectorAll('.memo')].map(m => m.querySelector('.who b').textContent + ':\n' + m.querySelector('.body').textContent).join('\n\n') + '\n\n' + ($('#decision') ? $('#decision').innerText : ''); }
+function setVote(decId, id, v){ const el = $('#vote-' + decId + '-' + id); if (!el) return; const ok = String(v.vote).toLowerCase() === 'approve'; el.className = 'vote ' + (ok ? 'approve' : 'dissent'); el.textContent = ok ? 'approve' : 'dissent'; $('#note-' + decId + '-' + id).textContent = v.note || ''; }
+function minutesText(){ return [...minutes.querySelectorAll('.memo')].map(m => m.querySelector('.who b').textContent + ':\n' + m.querySelector('.body').textContent).join('\n\n') + '\n\n' + [...minutes.querySelectorAll('.decision')].map(d => d.innerText).join('\n\n'); }
 
 /* ---------- the session ---------- */
 async function convene(){
@@ -309,30 +348,57 @@ async function convene(){
   $('#go').disabled = true; $('#stop').hidden = false; $('#state').textContent = 'in session'; $('#state').classList.add('on');
   ctl = new AbortController();
   const memos = {};
-  const speak = async (id, prompt) => {
-    const el = memoCard(id);
+  const speak = async (id, prompt, reply) => {
+    const el = memoCard(id, reply);
     $('#live').textContent = seat(id).name + ' is writing';
     try {
       const { text } = await sample(prompt, { signal: ctl.signal, modelTier: 'default', cache: false, onText: ({ text }) => { if (my === session) setBody(el, text, false); } });
       setBody(el, text, true); memos[id] = text; return text;
     } catch (e) { setBody(el, e.text || '', true); fail(el, e); throw e; }
   };
+  const votes = async (decEl, chair) => {
+    const out = [];
+    for (const pair of [['q','v'],['r','s']]) {
+      await Promise.all(pair.map(async id => {
+        try { const v = await sample.json(PROMPTS.vote(id, b, chair, memos), { signal: ctl.signal, modelTier: 'quick', cache: false }); setVote(decEl.id, id, v); out.push({id, vote: String(v.vote).toLowerCase(), note: v.note || ''}); }
+        catch (e) { const el = $('#vote-' + decEl.id + '-' + id); if (el) el.textContent = 'no vote'; if (e.code === 'cancelled') throw e; }
+      }));
+    }
+    return out;
+  };
   try {
-    await speak('q', PROMPTS.q(b, cands));
-    await speak('v', PROMPTS.v(b, cands, memos));
+    roundHead(1, 'Opening memos, written blind to each other');
+    await Promise.all([speak('q', PROMPTS.q(b, cands)), speak('v', PROMPTS.v(b, cands))]);
+    roundHead(2, 'Challenge');
     await speak('r', PROMPTS.r(b, cands, memos));
     await speak('s', PROMPTS.s(b, cands, memos));
+    if (b.pace === 'full') {
+      roundHead(3, 'Rebuttal');
+      await Promise.all([speak('qr', PROMPTS.qr(b, cands, memos), 'answering the Risk Officer and the Skeptic'), speak('vr', PROMPTS.vr(b, cands, memos), 'answering all three')]);
+    }
+    roundHead(b.pace === 'full' ? 4 : 3, 'The Chair\u2019s draft');
     const el = memoCard('c'); setBody(el, '', false); $('#live').textContent = 'The Chair is writing the allocation';
     let chair;
-    try { chair = await sample.json(PROMPTS.c(b, cands, memos), { signal: ctl.signal, modelTier: 'default', cache: false }); }
+    try { chair = normalise(b, await sample.json(PROMPTS.c(b, cands, memos), { signal: ctl.signal, modelTier: 'default', cache: false })); }
     catch (e) { fail(el, e); throw e; }
     setBody(el, chair.summary || 'Allocation below.', true);
-    const fixed = renderDecision(b, chair, false);
-    const chairFixed = {...chair, index_weight: fixed.idx, cash_weight: fixed.cash, positions: fixed.pos};
+    const wantRevision = b.pace === 'full';
+    const dec = renderDecision(b, chair, {id: 'draft', title: wantRevision ? 'The Chair\u2019s draft' : 'The Chair\u2019s decision', heading: wantRevision ? 'Draft allocation' : 'Allocation', final: !wantRevision});
+    roundHead(b.pace === 'full' ? 5 : 4, 'The vote');
     $('#live').textContent = 'The seats are voting';
-    for (const id of ['q','v','r','s']) {
-      try { setVote(id, await sample.json(PROMPTS.vote(id, b, chairFixed), { signal: ctl.signal, modelTier: 'quick', cache: false })); }
-      catch (e) { const v = $('#vote-' + id); if (v) { v.className = 'vote pending'; v.textContent = e.code === 'cancelled' ? 'no vote' : 'no vote'; } if (e.code === 'cancelled') break; }
+    const vs = await votes(dec, chair);
+    const dissents = vs.filter(v => v.vote === 'dissent');
+    if (wantRevision) {
+      roundHead(6, dissents.length ? `Revision after ${dissents.length} dissent${dissents.length > 1 ? 's' : ''}` : 'Adopted without revision');
+      let finalChair = chair;
+      if (dissents.length) {
+        const el2 = memoCard('c'); setBody(el2, '', false); $('#live').textContent = 'The Chair is revising';
+        try { finalChair = normalise(b, await sample.json(PROMPTS.c(b, cands, memos, PROMPTS.revise(dissents)), { signal: ctl.signal, modelTier: 'default', cache: false })); setBody(el2, finalChair.summary || '', true); }
+        catch (e) { fail(el2, e); throw e; }
+      }
+      const fin = renderDecision(b, finalChair, {id: 'decision', title: 'Adopted allocation', heading: dissents.length ? 'Revised allocation' : 'Allocation', previous: dissents.length ? chair : null});
+      if (dissents.length) { $('#live').textContent = 'Final vote'; await votes(fin, finalChair); }
+      else for (const v of vs) setVote('decision', v.id, v);
     }
     $('#live').textContent = 'Session complete';
   } catch (e) {
@@ -348,7 +414,7 @@ $('#stop').onclick = () => ctl && ctl.abort();
 function exampleSession(){
   const b = brief(), cands = candidates(b);
   minutes.innerHTML = '';
-  const top = cands.slice(0, 10), f = x => x.toFixed(0);
+  const top = [...cands].sort((a, c) => c.score - a.score).slice(0, 10), f = x => x.toFixed(0);
   const byQ = [...cands].sort((a, c) => c.quality - a.quality).slice(0, 6), byV = [...cands].sort((a, c) => c.value - a.value).slice(0, 5);
   const sectorCount = {}; for (const s of top) sectorCount[s.sector] = (sectorCount[s.sector] || 0) + 1;
   const big = Object.entries(sectorCount).sort((a, c) => c[1] - a[1])[0];
@@ -358,6 +424,7 @@ function exampleSession(){
     r: `For someone who can only sit through ${b.loss} with ${money(b.amount)}: cap any one sector at 30% of the whole amount and any one stock at 10%. ${big ? `${big[1]} of the top ten are ${big[0]}, so the shortlist as written is one bet, not ten.` : ''} The ${Math.round(b.index*100)}% index share is ${b.index >= 0.5 ? 'appropriate' : 'too low for that loss tolerance; I would raise it'}. Constraint the Chair may not break: no stock flagged very volatile above 5%.`,
     s: `The record says a top pick beats the index about ${Math.round(DATA.record.per_pick_beat_spy*100)}% of the time, and against the average candidate the edge cannot be told from luck. The two most likely failures are the two with the deepest dips and the richest multiples: a dip is only a bargain if the business stays strong, and the score cannot see that. This beats an index fund only if this year's leaders are next year's, which is exactly what it assumed in January 2022. The Risk Officer's sector cap is the one sound thing here.`,
   };
+  roundHead(1, 'Example memos, built by simple rules');
   for (const id of ['q','v','r','s']) { const el = memoCard(id); setBody(el, texts[id], true); }
   const picks = []; const used = {};
   for (const s of top) { if (picks.length >= b.npos) break; if ((used[s.sector] || 0) >= 2) continue; used[s.sector] = (used[s.sector] || 0) + 1; picks.push(s); }
@@ -367,8 +434,8 @@ function exampleSession(){
     risks: ['The stocks share one sector story more than the count suggests.', 'A strong three-year record is partly last cycle\'s story.', 'Filings lag by months; the news behind a dip is not in these numbers.'],
     watch: ['Check each earnings date; a report within two weeks can move a stock 10% overnight.', 'Read why each stock fell before deciding the dip is temporary.'], dissent_expected: 'The Skeptic will dissent on the record.' };
   const el = memoCard('c'); setBody(el, chair.summary, true);
-  renderDecision(b, chair, true);
-  setVote('q', {vote:'approve', note:'Businesses are sound.'}); setVote('v', {vote:'approve', note:'Prices are mixed but acceptable.'}); setVote('r', {vote:'approve', note:'Caps respected.'}); setVote('s', {vote:'dissent', note:'The record says coin flip.'});
+  renderDecision(b, normalise(b, chair), {example: true});
+  setVote('decision', 'q', {vote:'approve', note:'Businesses are sound.'}); setVote('decision', 'v', {vote:'approve', note:'Prices are mixed but acceptable.'}); setVote('decision', 'r', {vote:'approve', note:'Caps respected.'}); setVote('decision', 's', {vote:'dissent', note:'The record says coin flip.'});
   $('#state').textContent = 'example';
 }
 
