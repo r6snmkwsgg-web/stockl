@@ -66,10 +66,27 @@ def market_ok(spy: pd.DataFrame) -> pd.Series:
     return spy["Close"] > spy["Close"].rolling(MARKET_SMA, min_periods=MARKET_SMA).mean()
 
 
+def long_term_filter(d: pd.DataFrame) -> pd.Series:
+    """A looser filter for the mean-reversion variant: uptrend + liquid + > $10."""
+    c = d["Close"]
+    return ((c > d["sma200"]) & (d["sma200"] > d["sma200_20ago"])
+            & (d["avgvol50"] > MIN_AVG_VOLUME) & (c > MIN_PRICE))
+
+
+def setup_mean_reversion(d: pd.DataFrame) -> pd.Series:
+    """'Buy the dip': an uptrending stock that just had a sharp 2-3 day drop.
+
+    RSI(2) below 10 means the last couple of days were strongly down. The
+    stock must still be above its 200-day average (a dip, not a collapse).
+    """
+    return long_term_filter(d) & (d["rsi2"] < 10) & (d["Close"] < d["sma5"])
+
+
 def add_signals(d: pd.DataFrame) -> pd.DataFrame:
     d = d.copy()
     d["filter_ok"] = stock_filter(d)
     d["setup"] = d["filter_ok"] & setup(d)
+    d["setup_mr"] = setup_mean_reversion(d)
     return d
 
 

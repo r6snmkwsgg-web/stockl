@@ -20,7 +20,8 @@ import pandas as pd
 
 from swing.backtest import prepare
 from swing.data import download_all, load_all
-from swing.strategy import MAX_STOP_PCT, plan_trade
+from swing.backtest import Config, plan_stop
+from swing.strategy import MAX_STOP_PCT
 from swing.universe import ALL_TICKERS, MARKET
 
 ap = argparse.ArgumentParser()
@@ -52,7 +53,7 @@ for t, d in stocks.items():
         continue
     trigger = float(r["High"])
     entry = trigger * 1.001             # assume we get filled a hair above the trigger
-    plan = plan_trade(entry, float(r["pullback_low"]), float(r["atr14"]))
+    plan = plan_stop(Config(), entry, float(r["pullback_low"]), float(r["atr14"]))
     if plan is None:
         rows.append(dict(ticker=t, close=r["Close"], buy_above=trigger, stop=None, shares=0,
                          note=f"setup, but stop would be >{MAX_STOP_PCT:.0%} away: skip"))

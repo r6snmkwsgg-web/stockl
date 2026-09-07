@@ -58,6 +58,9 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     d["sma200_20ago"] = d["sma200"].shift(20)
     d["ema20"] = ema(c, 20)
     d["rsi14"] = rsi(c, 14)
+    d["rsi2"] = rsi(c, 2)                      # very short-term "oversold" gauge
+    d["sma5"] = sma(c, 5)
+    d["low5"] = d["Low"].rolling(5, min_periods=5).min()   # for a trailing stop
     d["atr14"] = atr(d, 14)
     d["hi52"] = d["High"].rolling(TRADING_DAYS_PER_YEAR, min_periods=TRADING_DAYS_PER_YEAR).max()
     d["lo52"] = d["Low"].rolling(TRADING_DAYS_PER_YEAR, min_periods=TRADING_DAYS_PER_YEAR).min()

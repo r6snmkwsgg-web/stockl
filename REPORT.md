@@ -301,7 +301,10 @@ not cross-check it against a second source.
 bull market with the biggest stocks leading. Even a strategy that worked here
 would need testing on other periods and other markets before trusting it.
 
-## 7. What I would look at next (not tested; outside the brief)
+## 7. What I would look at next
+
+*Update: these ideas, plus a "take 20% profit" version and a "buy the dip"
+version, have now been tested. See `RESEARCH.md`. None beat SPY.*
 
 1. **Give the trade room.** Exit on a close below the 20 EMA only *after* the
    +2R partial, and use the initial stop before that. Or trail the stop under

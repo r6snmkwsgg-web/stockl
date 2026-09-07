@@ -18,6 +18,10 @@ Prices used:
   * +2R partial: the target price, or today's open if it gapped above it.
   * "Sell at next open" exits: tomorrow's open price.
 No commissions are charged. See config.slippage_pct for a simple cost model.
+
+The Config also has "variant" switches (stop_mode, exit_rule, target_pct,
+setup_mode, entry_mode ...). Their defaults reproduce the original rules
+exactly; research_variants.py uses them to test rule changes.
 """
 from __future__ import annotations
 
@@ -29,7 +33,7 @@ import pandas as pd
 
 from . import strategy as S
 from .indicators import add_indicators
-from .strategy import add_signals, market_ok, plan_trade
+from .strategy import add_signals, market_ok
 
 
 @dataclass
@@ -45,6 +49,19 @@ class Config:
     min_size_fraction: float = 0.5      # skip if cash only covers < 50% of the intended size
     start: str = "2010-01-01"
     end: str | None = None
+    # ---- variant switches (defaults = the original rules) ----
+    setup_mode: str = "pullback"        # "pullback" (rules as given) or "mean_reversion"
+    entry_mode: str = "breakout"        # "breakout" = buy above prior high; "open" = buy next open
+    stop_mode: str = "closer"           # "closer" (rule 5), "atr" (2xATR only), "pullback" (low only)
+    atr_mult: float = 2.0
+    max_stop_pct: float = 0.08
+    partial_R: float | None = 2.0       # sell half at +NR and move stop to breakeven; None = off
+    exit_rule: str = "ema_close"        # "ema_close" (rule 7), "ema_after_partial", "trail_low5",
+                                        # "close_above_sma5" (mean reversion), "none"
+    target_pct: float | None = None     # sell everything when the high reaches entry*(1+x)
+    time_stop_days: int | None = 10     # rule 7: exit if not +1R after N days (None = off)
+    time_stop_min_R: float = 1.0
+    max_hold_days: int | None = None    # hard exit at the open after N days (None = off)
 
 
 @dataclass
@@ -79,10 +96,31 @@ def prepare(prices: dict[str, pd.DataFrame], market: str = "SPY"):
             continue
         d = add_signals(add_indicators(df))
         d = d.reindex(calendar)          # missing days (before IPO) become NaN
-        d["setup"] = d["setup"].fillna(False).astype(bool)
+        for c in ("setup", "setup_mr"):
+            d[c] = d[c].fillna(False).astype(bool)
         d["close_ff"] = d["Close"].ffill()   # last known close, used only to value open positions
         stocks[t] = d
     return spy, stocks, calendar
+
+
+def plan_stop(cfg: Config, entry: float, pullback_low: float, atr14: float):
+    """Return (stop, risk_per_share) or None if the stop would be too far away."""
+    stop_low = pullback_low * (1 - S.STOP_BUFFER)
+    stop_atr = entry - cfg.atr_mult * atr14
+    if cfg.stop_mode == "closer":
+        stop = max(stop_low, stop_atr)
+    elif cfg.stop_mode == "atr":
+        stop = stop_atr
+    elif cfg.stop_mode == "pullback":
+        stop = stop_low
+    else:
+        raise ValueError(cfg.stop_mode)
+    if not (stop < entry):
+        return None
+    risk = entry - stop
+    if risk / entry > cfg.max_stop_pct:
+        return None
+    return stop, risk
 
 
 def run(prices: dict[str, pd.DataFrame], cfg: Config, market: str = "SPY",
@@ -93,10 +131,12 @@ def run(prices: dict[str, pd.DataFrame], cfg: Config, market: str = "SPY",
     days = calendar[(calendar >= start) & (calendar <= end)]
 
     # Pull everything into numpy for speed.
-    cols = ["Open", "High", "Low", "Close", "close_ff", "ema20", "atr14", "pullback_low", "ret126"]
+    cols = ["Open", "High", "Low", "Close", "close_ff", "ema20", "sma5", "low5", "atr14",
+            "pullback_low", "ret126", "rsi2"]
     arr = {t: {c: d[c].to_numpy(dtype=float) for c in cols} for t, d in stocks.items()}
+    setup_col = "setup" if cfg.setup_mode == "pullback" else "setup_mr"
     for t, d in stocks.items():
-        arr[t]["setup"] = d["setup"].to_numpy(dtype=bool)
+        arr[t]["setup"] = d[setup_col].to_numpy(dtype=bool)
     mkt_ok = spy["market_ok"].to_numpy(dtype=bool)
     pos_of = {dt: i for i, dt in enumerate(calendar)}
     slip = cfg.slippage_pct
@@ -123,10 +163,17 @@ def run(prices: dict[str, pd.DataFrame], cfg: Config, market: str = "SPY",
                 version=cfg.name, ticker=p.ticker, entry_date=p.entry_date, exit_date=date,
                 entry=p.entry, init_stop=p.init_stop, shares=p.init_shares,
                 risk_dollars=p.init_risk_dollars, pnl=p.realized, R=r,
+                pct=p.realized / (p.init_shares * p.entry),
                 days_held=p.days_held, partial_taken=p.partial_done,
                 exit_reason=reason,
             ))
             del positions[p.ticker]
+
+    def rank_key(c):
+        t, j = c
+        if cfg.setup_mode == "mean_reversion":
+            return np.nan_to_num(arr[t]["rsi2"][j], nan=99)          # most oversold first
+        return -np.nan_to_num(arr[t]["ret126"][j], nan=-9)           # strongest first
 
     for date in days:
         i = pos_of[date]
@@ -149,32 +196,41 @@ def run(prices: dict[str, pd.DataFrame], cfg: Config, market: str = "SPY",
             if l <= p.stop:
                 close_out(p, date, p.shares, p.stop, "stop" if not p.partial_done else "breakeven_stop")
                 continue
-            if not p.partial_done:
-                target = p.entry + S.PARTIAL_TARGET_R * p.risk_per_share
+            if cfg.target_pct is not None:
+                tgt = p.entry * (1 + cfg.target_pct)
+                if h >= tgt:
+                    close_out(p, date, p.shares, max(o, tgt), f"target_{cfg.target_pct:.0%}"); continue
+            if cfg.partial_R is not None and not p.partial_done:
+                target = p.entry + cfg.partial_R * p.risk_per_share
                 if h >= target:
                     fill = max(o, target)
                     half = p.shares // 2
                     if half == 0:
-                        close_out(p, date, p.shares, fill, "target_2R_all"); continue
-                    close_out(p, date, half, fill, "target_2R_half")
+                        close_out(p, date, p.shares, fill, "target_R_all"); continue
+                    close_out(p, date, half, fill, "target_R_half")
                     p.partial_done = True
                     p.stop = p.entry                       # move stop to breakeven
 
         # ---- 2. entries from yesterday's candidates --------------------------
         if candidates:
-            candidates.sort(key=lambda c: -np.nan_to_num(arr[c[0]]["ret126"][c[1]], nan=-9))
+            candidates.sort(key=rank_key)
             for t, j in candidates:
                 if t in positions or len(positions) >= cfg.max_positions:
                     continue
                 a = arr[t]
                 o, h = a["Open"][i], a["High"][i]
-                trig = a["High"][j]
-                if np.isnan(o) or h <= trig:
-                    continue                               # did not trade above yesterday's high
-                entry = max(o, trig) * (1 + slip)
+                if np.isnan(o):
+                    continue
+                if cfg.entry_mode == "breakout":
+                    trig = a["High"][j]
+                    if h <= trig:
+                        continue                           # did not trade above yesterday's high
+                    entry = max(o, trig) * (1 + slip)
+                else:
+                    entry = o * (1 + slip)                 # buy at the open
                 if np.isnan(a["pullback_low"][j]) or np.isnan(a["atr14"][j]):
                     continue
-                plan = plan_trade(entry, a["pullback_low"][j], a["atr14"][j])
+                plan = plan_stop(cfg, entry, a["pullback_low"][j], a["atr14"][j])
                 if plan is None:
                     continue
                 stop, rps = plan
@@ -198,11 +254,23 @@ def run(prices: dict[str, pd.DataFrame], cfg: Config, market: str = "SPY",
             c = a["Close"][i]
             if np.isnan(c) or p.exit_pending:
                 continue
-            if c < a["ema20"][i]:
+            rule = cfg.exit_rule
+            if rule == "ema_close" and c < a["ema20"][i]:
                 p.exit_pending = "close_below_ema20"
-            elif (p.days_held >= S.TIME_STOP_DAYS and not p.partial_done
-                  and c < p.entry + S.TIME_STOP_MIN_R * p.risk_per_share):
-                p.exit_pending = "time_stop_10d"
+            elif rule == "ema_after_partial" and p.partial_done and c < a["ema20"][i]:
+                p.exit_pending = "close_below_ema20"
+            elif rule == "trail_low5":
+                # raise the stop to the lowest low of the last 5 days (never lower it)
+                p.stop = max(p.stop, a["low5"][i])
+            elif rule == "close_above_sma5" and c > a["sma5"][i]:
+                p.exit_pending = "close_above_sma5"
+            if p.exit_pending:
+                continue
+            if (cfg.time_stop_days is not None and p.days_held >= cfg.time_stop_days
+                    and not p.partial_done and c < p.entry + cfg.time_stop_min_R * p.risk_per_share):
+                p.exit_pending = "time_stop"
+            elif cfg.max_hold_days is not None and p.days_held >= cfg.max_hold_days:
+                p.exit_pending = "max_hold"
 
         if (not cfg.use_market_filter) or mkt_ok[i]:
             for t, a in arr.items():

@@ -6,7 +6,8 @@ for today's setups.
 
 **Read `REPORT.md` first.** It explains the rules, the results and, just as
 important, the reasons the results are probably better than what you would get
-in real life.
+in real life. **Then read `RESEARCH.md`**, which tests 13 changes to the rules
+(including "hold a few days, take 20%") to see whether anything beats SPY.
 
 ## What is in here
 
@@ -15,6 +16,8 @@ in real life.
 | `download_data.py` | Step 1. Downloads daily prices for SPY + 100 stocks into `data/prices/`. |
 | `run_backtest.py` | Steps 2-4. Runs the strategy in every version and writes `results/`. |
 | `scan_today.py` | Step 5. Downloads fresh prices and prints today's setups with entry, stop and share count. |
+| `research_variants.py` | Runs 13 rule variants, with costs and a first-half / second-half split. Writes `results/variants.md`. |
+| `RESEARCH.md` | Write-up of the variant research. |
 | `swing/universe.py` | The list of 100 stocks. |
 | `swing/data.py` | Download / load code (stooq with Yahoo fallback). |
 | `swing/indicators.py` | Moving averages, RSI, ATR, 52-week high/low, pullback detection. |
@@ -34,6 +37,9 @@ python download_data.py
 
 # 2-4. run the backtest, results go into results/
 python run_backtest.py
+
+# extra: test 13 rule variants (about a minute)
+python research_variants.py
 
 # 5. any day after the close: what matches the setup today?
 python scan_today.py                       # $3,000 account, 2% risk (defaults)
