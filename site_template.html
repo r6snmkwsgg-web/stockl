@@ -173,7 +173,7 @@ footer p{max-width:var(--measure)}
   <section class="workspace" aria-label="Ranked stocks">
     <div class="controls">
       <input type="search" id="q" placeholder="Search ticker or company" aria-label="Search">
-      <label>Universe <select id="uni"><option value="all">All companies</option><option value="top100">Today's 100 largest</option><option value="fallen">Once-large, since fallen</option></select></label>
+      <label>Universe <select id="uni"><option value="all">All companies</option><option value="top100">Today's 100 largest</option><option value="fallen">Once-large, since fallen</option><option value="mid">Mid caps (S&amp;P 400)</option><option value="small">Small caps (S&amp;P 600)</option></select></label>
       <label>Sector <select id="sector"><option value="all">All sectors</option></select></label>
       <label>Min score <input type="number" id="minscore" value="0" min="0" max="100" step="5" style="width:64px"></label>
       <label><input type="checkbox" id="showoff"> Show unscored</label>
@@ -268,7 +268,7 @@ const HARD = /^(losing|negative free|stale|thin)/;
   $('#facts').innerHTML =
     mk('Prices as of', fmt.date(DATA.as_of)) +
     mk('Market (SPY vs 200-day)', `${fmt.num(m.spy,2)} vs ${fmt.num(m.sma200,2)} <span class="pill ${m.ok?'good':'bad'}">${m.ok?'above \u00b7 uptrend':'below \u00b7 caution'}</span>`) +
-    mk('Companies scanned', `${c.scanned} <span class="sub">(${c.top100} largest + ${c.fallen} fallen)</span>`) +
+    mk('Companies scanned', `${c.scanned} <span class="sub">(${c.top100} largest + ${c.fallen} fallen${c.mid ? ' + ' + c.mid + ' mid' : ''}${c.small ? ' + ' + c.small + ' small' : ''})</span>`) +
     mk('Scored today', `${c.eligible} <span class="sub">(${c.scanned - c.eligible} not scored)</span>`);
   $('#w-q').textContent = `${Math.round(DATA.weights.quality*100)}% of the score`;
   $('#w-v').textContent = `${Math.round(DATA.weights.value*100)}% of the score`;
@@ -313,7 +313,7 @@ function renderTable(){
     const hard = s.flags.some(f => HARD.test(f));
     tr.innerHTML = `
       <td class="r num">${s.eligible ? s.rank : '\u2014'}</td>
-      <td class="company"><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} \u00b7 ${esc(s.sector)}</span></td>
+      <td class="company"><span class="t">${esc(s.ticker)}</span><span class="n">${esc(s.name)} \u00b7 ${esc(s.sector)}${s.universe === 'mid' ? ' &middot; mid cap' : s.universe === 'small' ? ' &middot; small cap' : ''}</span></td>
       <td class="r">${s.eligible ? `<span class="score ${band(s.score)}">${s.score.toFixed(0)}</span>` : `<span class="sub">not scored</span>`}</td>
       <td>${s.eligible ? meter(s) : `<span class="sub">${esc(s.reason||'')}</span>`}</td>
       <td class="r num">${fmt.price(s.price)}</td>

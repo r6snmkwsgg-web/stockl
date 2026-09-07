@@ -51,6 +51,12 @@ a{color:var(--ivory-2)}
 .field .val{font-family:var(--mono);font-size:13px;color:var(--ivory)}
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tiers button{border:1px solid var(--rule-strong);background:transparent;color:var(--ink-2);border-radius:var(--radius);padding:7px 4px;font-size:12.5px;cursor:pointer}
+.tiers button[aria-pressed="true"]{background:var(--ivory);color:var(--ground);border-color:var(--ivory);font-weight:600}
+.tierrec{font-size:12px;color:var(--ink-3);line-height:1.45;margin-top:6px}
+.tierrec b{color:var(--ink-2);font-weight:500}
+.tierrec .num{color:var(--ivory)}
 .chip{border:1px solid var(--rule-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:transparent;color:var(--ink-2);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--raised);border-color:var(--ivory-2);color:var(--ivory)}
 .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink-2);margin:4px 0}
@@ -162,6 +168,7 @@ footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;ma
   <aside class="brief" aria-label="Your brief">
     <h2>The brief</h2>
     <p class="sub">What the committee is deciding for.</p>
+    <div class="field"><span class="lbl">Risk profile</span><div class="tiers" id="tiers"></div><p class="tierrec" id="tierrec"></p></div>
     <div class="field"><label for="amount">Amount to invest ($)</label><input id="amount" type="number" min="100" step="100" value="3000"></div>
     <div class="field"><label for="horizon">How long can it stay invested?</label>
       <select id="horizon"><option value="under a year">Under a year</option><option value="one to three years" selected>One to three years</option><option value="three to ten years">Three to ten years</option><option value="more than ten years">More than ten years</option></select></div>
@@ -177,7 +184,7 @@ footer{color:var(--ink-3);font-size:12.5px;padding:0 32px 40px;max-width:70ch;ma
       <label class="check"><input type="checkbox" id="pDiv"> Prefer companies that pay dividends</label>
 
       <label class="check"><input type="checkbox" id="pDip"> Only stocks in a fresh pull-back</label>
-      <label class="check"><input type="checkbox" id="pBig" checked> Only today&rsquo;s largest companies (not the fallen list)</label></div>
+      <label class="check"><input type="checkbox" id="pBig" checked> Only today&rsquo;s largest companies (ignore the risk profile&rsquo;s wider lists)</label></div>
     <div class="field"><label for="own">Stocks you already own or want left out (tickers)</label><input id="own" type="text" placeholder="e.g. NVDA, AAPL" style="background:var(--ground);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:8px 10px;color:var(--ink);width:100%"></div>
     <div class="field"><label for="pace">Session</label>
       <select id="pace"><option value="full" selected>Full: memos, challenge, rebuttal, two competing drafts, vote, revision (4 to 5 minutes)</option><option value="quick">Quick: memos, challenge, one draft, vote (about 2 minutes)</option></select></div>
@@ -235,8 +242,24 @@ $('#eyebrow').innerHTML = `In session &middot; numbers as of ${esc(DATA.as_of)} 
 $('#seats').innerHTML = SEATS.map(s => `<div class="seat" id="seat-${s.id}" style="--seat:${s.color}"><div class="seal">${s.seal}</div><b>${s.name}</b><span>${s.job}</span></div>`).join('');
 $('#foot').textContent = `Candidates: the ${DATA.stocks.length} highest-scoring stocks on the Bargain Ledger as of ${DATA.as_of}. Record: point-in-time test ${DATA.record.first || ''} to ${DATA.record.last || ''}. Not investment advice.`;
 for (const s of DATA.sectors) { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = s; b.setAttribute('aria-pressed', 'false'); b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); $('#avoid').appendChild(b); }
+let tierId = 'moderate';
+function tierRecord(t){
+  const r = t.record; if (!r) return `<b>${t.name}.</b> ${t.blurb} Its own record has not been measured yet.`;
+  const p = v => (v > 0 ? '+' : '') + (v*100).toFixed(0) + '%';
+  return `<b>${t.name}.</b> ${t.blurb} Measured on ${r.n_dates} quarterly tests since 2012, dividends included: a ten-stock basket compounded at <span class="num">${p(r.basket_cagr)}</span> a year against SPY\u2019s ${p(r.spy_cagr)}, a pick beat SPY over the next year ${(r.beat_spy*100).toFixed(0)}% of the time, ${(r.lost_20*100).toFixed(0)}% of picks lost more than 20%, and the worst fall was <span class="num">${p(r.max_dd)}</span> (SPY ${p(r.spy_max_dd)}). Worst year of picks ${p(r.worst_year)}, best ${p(r.best_year)}. History, not a forecast.`;
+}
+function applyTier(id){
+  tierId = id; const t = DATA.tiers.find(x => x.id === id);
+  for (const b of document.querySelectorAll('#tiers button')) b.setAttribute('aria-pressed', b.dataset.id === id ? 'true' : 'false');
+  $('#vol').value = String(t.vol_cap); $('#index').value = t.index; $('#indexv').textContent = t.index + '%'; $('#npos').value = t.npos; $('#nposv').textContent = t.npos;
+  $('#pBig').checked = t.universes.length === 1;
+  $('#tierrec').innerHTML = tierRecord(t);
+}
+$('#tiers').innerHTML = (DATA.tiers || []).map(t => `<button type="button" data-id="${t.id}" aria-pressed="false">${t.name}</button>`).join('');
+for (const b of document.querySelectorAll('#tiers button')) b.onclick = () => applyTier(b.dataset.id);
 $('#npos').oninput = e => $('#nposv').textContent = e.target.value;
 $('#spyvol').textContent = Math.round(DATA.market.spy_vol || 18);
+if (DATA.tiers && DATA.tiers.length) applyTier('moderate');
 $('#index').oninput = e => $('#indexv').textContent = e.target.value + '%';
 
 /* ---------- the brief ---------- */
@@ -246,18 +269,21 @@ function brief(){
   return {
     amount: Math.max(100, +$('#amount').value || 3000), horizon: $('#horizon').value, loss: $('#loss').value,
     npos: +$('#npos').value, index: +$('#index').value / 100, avoid, own, pace: $('#pace').value, volCap: +$('#vol').value,
+    tier: tierId, universes: (DATA.tiers.find(x => x.id === tierId) || {universes: ['top100', 'fallen']}).universes,
     dividends: $('#pDiv').checked, noVol: false, freshOnly: $('#pDip').checked, bigOnly: $('#pBig').checked,
     notes: $('#notes').value.trim().slice(0, 400),
   };
 }
 function candidates(b){
   const list = DATA.stocks.filter(s => !b.avoid.includes(s.sector) && !b.own.includes(s.ticker) && (!isNum(s.vol60) || s.vol60 <= b.volCap)
-    && (!b.freshOnly || s.fresh) && (!b.bigOnly || s.universe === 'top100'));
-  // no score order: sector then ticker, so the committee does its own ranking
-  return list.sort((a, c) => a.sector.localeCompare(c.sector) || a.ticker.localeCompare(c.ticker));
+    && (!b.freshOnly || s.fresh) && (b.bigOnly ? s.universe === 'top100' : b.universes.includes(s.universe)));
+  // keep the prompts within the size cap: at most 130 candidates, the highest-scoring ones, then no score order
+  const capped = list.length > 130 ? [...list].sort((a, c) => (c.score || 0) - (a.score || 0)).slice(0, 130) : list;
+  return capped.sort((a, c) => a.sector.localeCompare(c.sector) || a.ticker.localeCompare(c.ticker));
 }
 function briefText(b){
-  return `THE BRIEF\n- Amount: ${money(b.amount)}\n- Time it can stay invested: ${b.horizon}\n- Worst single year they could sit through without selling: ${b.loss}\n- Individual stocks wanted: ${b.npos}\n- Volatility limit: ${b.volCap < 999 ? 'no stock that moves more than ' + b.volCap + '% a year (the list is already filtered to this), and the Risk Officer must keep the stock part\'s weighted volatility comfortably under it' : 'none set'}\n- Share to keep in a plain S&P 500 index fund: ${Math.round(b.index*100)}%\n- Sectors to avoid: ${b.avoid.length ? b.avoid.join(', ') : 'none'}\n- Already owned or excluded: ${b.own.length ? b.own.join(', ') : 'none'}\n- Preferences: ${[b.dividends && 'prefers dividend payers', b.freshOnly && 'only fresh pull-backs', b.bigOnly && 'only today\'s largest companies'].filter(Boolean).join('; ') || 'none stated'}\n- In their words: ${b.notes || '(nothing added)'}`;
+  const tier = DATA.tiers.find(x => x.id === b.tier);
+  return `THE BRIEF\n- Risk profile: ${tier ? tier.name + ' (' + tier.blurb + ')' : 'not set'}\n- Amount: ${money(b.amount)}\n- Time it can stay invested: ${b.horizon}\n- Worst single year they could sit through without selling: ${b.loss}\n- Individual stocks wanted: ${b.npos}\n- Volatility limit: ${b.volCap < 999 ? 'no stock that moves more than ' + b.volCap + '% a year (the list is already filtered to this), and the Risk Officer must keep the stock part\'s weighted volatility comfortably under it' : 'none set'}\n- Share to keep in a plain S&P 500 index fund: ${Math.round(b.index*100)}%\n- Sectors to avoid: ${b.avoid.length ? b.avoid.join(', ') : 'none'}\n- Already owned or excluded: ${b.own.length ? b.own.join(', ') : 'none'}\n- Preferences: ${[b.dividends && 'prefers dividend payers', b.freshOnly && 'only fresh pull-backs', b.bigOnly && 'only today\'s largest companies'].filter(Boolean).join('; ') || 'none stated'}\n- In their words: ${b.notes || '(nothing added)'}`;
 }
 const n0 = (v, d=0) => isNum(v) ? v.toFixed(d) : 'n/a';
 const trendQ = s => (s.q_rev && s.q_rev.length >= 4) ? ` | revenue by quarter, oldest to newest ($B): ${s.q_rev.join(', ')} | profit by quarter: ${(s.q_ni || []).join(', ')}` : '';
@@ -276,10 +302,10 @@ function newsText(cands, memos, label){
 }
 /* each seat gets a different slice of the filings, and nobody gets the Ledger score */
 const SLICE = {
-  q: s => `${s.ticker} ${s.name} | ${s.sector} | ROE ${pct(s.roe)} | ${s.financial ? 'net margin ' + pct(s.net_margin) : 'free cash ' + pct(s.fcf_margin) + ' of revenue'} | revenue ${pct(s.rev_growth,0,true)} | profit ${pct(s.ni_growth,0,true)} | debt/equity ${n0(s.debt_to_equity,2)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | revenue ${money(s.revenue_ttm/1e9)}B${trendQ(s)} | flags: ${s.flags.filter(f => /losing|shrinking|debt|one-off|stale/.test(f)).join('; ') || 'none'}`,
+  q: s => `${s.ticker} ${s.name} | ${s.sector}${s.universe === 'small' ? ' (small cap)' : s.universe === 'mid' ? ' (mid cap)' : ''} | ROE ${pct(s.roe)} | ${s.financial ? 'net margin ' + pct(s.net_margin) : 'free cash ' + pct(s.fcf_margin) + ' of revenue'} | revenue ${pct(s.rev_growth,0,true)} | profit ${pct(s.ni_growth,0,true)} | debt/equity ${n0(s.debt_to_equity,2)} | 3-yr vs SPY ${pct(s.ret3y_vs_spy,0,true)} | revenue ${money(s.revenue_ttm/1e9)}B${trendQ(s)} | flags: ${s.flags.filter(f => /losing|shrinking|debt|one-off|stale/.test(f)).join('; ') || 'none'}`,
   v: s => `${s.ticker} | ${s.sector} | $${s.price} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? (s.pe_pct_5y <= 50 ? ' (cheaper than ' + (100 - s.pe_pct_5y) + '% of its own 5 yrs)' : ' (pricier than ' + s.pe_pct_5y + '% of its own 5 yrs)') : ''} | P/S ${n0(s.ps,1)} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | earnings yield ${pct(s.earnings_yield,1)} | 1-yr ${pct(s.ret1y,0,true)} | ${pct(-s.dip)} below 52-wk high${trendP(s)} | flags: ${s.flags.filter(f => /expensive|priced above|one-off/.test(f)).join('; ') || 'none'}`,
   r: s => `${s.ticker} | ${s.sector} | volatility ${pct(s.vol60)}/yr | ${pct(-s.dip)} below 52-wk high${s.fresh ? ' (fresh)' : ' (old high)'} | ${pct(s.above_200,0,true)} vs 200-day | debt/equity ${n0(s.debt_to_equity,2)} | 1-yr ${pct(s.ret1y,0,true)} | flags: ${s.flags.join('; ') || 'none'}`,
-  c: s => `${s.ticker} ${s.name} | ${s.sector} | $${s.price} | ROE ${pct(s.roe)} | rev ${pct(s.rev_growth,0,true)} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? ' (' + (s.pe_pct_5y <= 50 ? 'cheaper' : 'pricier') + ' than ' + (s.pe_pct_5y <= 50 ? 100 - s.pe_pct_5y : s.pe_pct_5y) + '% of own 5 yrs)' : ''} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | ${pct(-s.dip)} below high${s.fresh ? ' (fresh)' : ''} | vol ${pct(s.vol60)} | D/E ${n0(s.debt_to_equity,2)} | flags: ${s.flags.join('; ') || 'none'}`,
+  c: s => `${s.ticker} ${s.name} | ${s.sector}${s.universe === 'small' ? ' (small cap)' : s.universe === 'mid' ? ' (mid cap)' : ''} | $${s.price} | ROE ${pct(s.roe)} | rev ${pct(s.rev_growth,0,true)} | P/E ${n0(s.pe,1)}${isNum(s.pe_pct_5y) ? ' (' + (s.pe_pct_5y <= 50 ? 'cheaper' : 'pricier') + ' than ' + (s.pe_pct_5y <= 50 ? 100 - s.pe_pct_5y : s.pe_pct_5y) + '% of own 5 yrs)' : ''} | ${s.financial ? 'financial' : 'FCF yield ' + pct(s.fcf_yield,1)} | ${pct(-s.dip)} below high${s.fresh ? ' (fresh)' : ''} | vol ${pct(s.vol60)} | D/E ${n0(s.debt_to_equity,2)} | flags: ${s.flags.join('; ') || 'none'}`,
 };
 function dataText(cands, who){
   return `CANDIDATES (${cands.length} companies, listed by sector, NOT ranked; every figure is from SEC filings and prices as of ${DATA.as_of})\n` + cands.map(SLICE[who]).join('\n');

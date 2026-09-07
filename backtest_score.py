@@ -30,17 +30,28 @@ from swing import score as S
 from swing.control_universe import FALLEN
 from swing.score import build_features, cross_section
 from swing.universe import ALL_TICKERS, MARKET, STOCKS
+from swing.universe_extra import MID, SMALL
 
 OUT = Path("results")
 TOP_N = 10
 COST_PER_QUARTER = 0.002      # 0.1% to buy + 0.1% to sell, once a quarter
 
 
-def load_prices():
+TIER = {}
+
+
+def load_prices(tiers=("top100", "fallen")):
     prices = data.load_all(ALL_TICKERS)
-    data.DATA_DIR = Path("data/control")
-    for t, df in data.load_all(FALLEN).items():
-        prices.setdefault(t, df)
+    for t in prices:
+        TIER[t] = "top100"
+    for tier, lst, d in [("fallen", FALLEN, "data/control"), ("mid", MID, "data/prices_mid"), ("small", SMALL, "data/prices_small")]:
+        if tier not in tiers:
+            continue
+        data.DATA_DIR = Path(d)
+        for t, df in data.load_all(lst).items():
+            if t not in prices:
+                prices[t] = df
+                TIER[t] = tier
     data.DATA_DIR = Path("data/prices")
     return prices
 
@@ -52,6 +63,8 @@ def main():
     ap.add_argument("--timing", type=float)
     ap.add_argument("--flag-penalty", type=float)
     ap.add_argument("--tag", default="", help="suffix for the output files, e.g. _v1")
+    ap.add_argument("--tiers", default="top100,fallen", help="comma list of universes: top100,fallen,mid,small")
+    ap.add_argument("--vol-cap", type=float, default=None, help="only stocks with 60-day volatility at or below this (percent)")
     args = ap.parse_args()
     if args.quality is not None:
         S.WEIGHTS.update({"quality": args.quality, "value": args.value, "timing": args.timing})
@@ -59,7 +72,8 @@ def main():
         S.FLAG_PENALTY = args.flag_penalty
     print(f"weights {S.WEIGHTS}, flag penalty {S.FLAG_PENALTY}")
     tag = args.tag
-    prices = load_prices()
+    prices = load_prices(tuple(args.tiers.split(",")))
+    vol_cap = args.vol_cap
     cal = prices[MARKET].index
     spy = prices[MARKET]["Close"]
     tickers = [t for t in prices if t != MARKET]
@@ -81,7 +95,10 @@ def main():
     picks = []
     for d in dates:
         cs = cross_section(feats, d)
-        el = cs[cs["eligible"]].sort_values("score", ascending=False)
+        el = cs[cs["eligible"]]
+        if vol_cap is not None:
+            el = el[el["vol60"] <= vol_cap / 100]
+        el = el.sort_values("score", ascending=False)
         if len(el) < 20:
             continue
         el = el.copy()
@@ -94,7 +111,7 @@ def main():
             f252 = closes[t].iloc[i + 252] / c0 - 1
             s63 = spy.iloc[j] / spy.iloc[i] - 1
             s252 = spy.iloc[i + 252] / spy.iloc[i] - 1
-            picks.append(dict(date=d, ticker=t, universe="top-100" if t in STOCKS else "fallen",
+            picks.append(dict(date=d, ticker=t, universe=TIER.get(t, "fallen"),
                               score=row["score"], quality=row["quality"], value=row["value"],
                               timing=row["timing"], n_flags=row["n_flags"], rank=row["rank"],
                               quintile=row["quintile"], n_eligible=len(el),
@@ -128,7 +145,7 @@ def main():
     res = {
         "rebalance_dates": len(dates), "first": str(dates[0].date()), "last": str(dates[-1].date()),
         "top10": stats(top), "bottom10": stats(bottom), "all_eligible": stats(p),
-        "top10_top100_only": stats(top[top.universe == "top-100"]),
+        "top10_top100_only": stats(top[top.universe == "top100"]),
         "top10_fallen_only": stats(top[top.universe == "fallen"]),
         "top10_share_from_fallen": float((top.universe == "fallen").mean()),
         "quintiles": {int(k): stats(g) for k, g in p.groupby("quintile")},
@@ -168,6 +185,8 @@ def main():
               + [(str(d.date()), round(float(a), 4), round(float(b), 4)) for d, a, b in zip(q_end, eq, eq_spy)],
     )
     res["weights"] = dict(S.WEIGHTS)
+    res["tiers"] = args.tiers
+    res["vol_cap"] = vol_cap
     res["flag_penalty"] = S.FLAG_PENALTY
     (OUT / f"score_backtest{tag}.json").write_text(json.dumps(res, indent=1))
 

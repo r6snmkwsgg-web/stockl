@@ -72,6 +72,27 @@ def main():
             "beat": float((top.basket > top.spy).mean()), "lose": float((top.basket < 0).mean()), "n": int(len(top)),
             "worst": float(top.basket.min()), "best": float(top.basket.max())}
     bt = payload.get("backtest") or {}
+    # risk tiers: what each one is, and what its own point-in-time backtest measured
+    TIERS = [
+        {"id": "calm", "name": "Calm", "universes": ["top100"], "vol_cap": 30, "index": 70, "npos": 4,
+         "blurb": "Today's largest companies only, none that moves more than 30% a year, most of the money in the index fund."},
+        {"id": "moderate", "name": "Moderate", "universes": ["top100"], "vol_cap": 45, "index": 50, "npos": 6,
+         "blurb": "Today's largest companies, up to 45% volatility, half in the index fund."},
+        {"id": "high", "name": "High", "universes": ["top100", "mid"], "vol_cap": 60, "index": 30, "npos": 8,
+         "blurb": "Large and mid-sized companies (S&P 400), up to 60% volatility, less in the index fund."},
+        {"id": "extreme", "name": "Extreme", "universes": ["top100", "mid", "small"], "vol_cap": 999, "index": 10, "npos": 10,
+         "blurb": "Everything down to small caps (S&P 600), no volatility limit, almost nothing in the index fund. Big winners and big blow-ups live here."},
+    ]
+    for tier in TIERS:
+        f = Path(f"results/tier_{tier['id']}.json")
+        if f.exists():
+            j = json.loads(f.read_text())
+            tier["record"] = {"basket_cagr": j["portfolio"]["cagr"], "spy_cagr": j["portfolio"]["spy_cagr"], "max_dd": j["portfolio"]["max_dd"],
+                              "spy_max_dd": j["portfolio"]["spy_max_dd"], "beat_spy": j["top10"]["beat_spy_12m"], "lost_20": j["top10"]["lost_20pct_12m"],
+                              "avg_12m": j["top10"]["avg_12m"], "worst_year": min(v["avg_12m"] for v in j["by_year"].values()),
+                              "best_year": max(v["avg_12m"] for v in j["by_year"].values()), "n_dates": j["rebalance_dates"]}
+        else:
+            tier["record"] = None
     record = {
         "per_pick_beat_spy": bt.get("top10", {}).get("beat_spy_12m"),
         "per_pick_vs_spy": bt.get("top10", {}).get("avg_vs_spy_12m"),
@@ -149,7 +170,7 @@ def main():
     spy_px = pd.read_csv("data/prices/SPY.csv.gz", parse_dates=["Date"], index_col="Date")["Close"]
     spy_vol = float(np.log(spy_px).diff().rolling(60).std().iloc[-1] * np.sqrt(252) * 100)
     data = {"as_of": payload["as_of"], "market": {**payload["market"], "spy_vol": round(spy_vol, 1)}, "stocks": stocks, "sectors": sectors,
-            "hist": hist, "macro": macro,
+            "hist": hist, "macro": macro, "tiers": TIERS,
             "dist": dist, "record": record, "counts": payload["counts"]}
     js = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     page = TEMPLATE.read_text().replace("__DATA__", js)

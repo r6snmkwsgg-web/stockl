@@ -20,6 +20,7 @@ import pandas as pd
 
 from swing import data, fundamentals
 from swing.control_universe import FALLEN
+from swing.universe_extra import EXTRA_NAMES, MID, SMALL
 from swing.score import NOT_SCORED, WEIGHTS, build_features, cross_section
 from swing.universe import ALL_TICKERS, MARKET, STOCKS
 
@@ -56,11 +57,19 @@ def clean_name(n: str | None, ticker: str) -> str:
     return n.strip() or ticker
 
 
+TIER = {}   # ticker -> "top100" | "fallen" | "mid" | "small"
+
+
 def load_prices():
     prices = data.load_all(ALL_TICKERS)
-    data.DATA_DIR = Path("data/control")
-    for t, df in data.load_all(FALLEN).items():
-        prices.setdefault(t, df)
+    for t in prices:
+        TIER[t] = "top100"
+    for tier, lst, d in [("fallen", FALLEN, "data/control"), ("mid", MID, "data/prices_mid"), ("small", SMALL, "data/prices_small")]:
+        data.DATA_DIR = Path(d)
+        for t, df in data.load_all(lst).items():
+            if t not in prices:
+                prices[t] = df
+                TIER[t] = tier
     data.DATA_DIR = Path("data/prices")
     return prices
 
@@ -192,8 +201,8 @@ def main():
             else:
                 reason = "missing data"
         stocks.append({
-            "ticker": t, "name": clean_name(fdata.get("name"), t), "sector": r["sector"],
-            "universe": "top100" if t in STOCKS else "fallen", "financial": bool(r["financial"]),
+            "ticker": t, "name": clean_name(fdata.get("name"), t) if t not in EXTRA_NAMES else EXTRA_NAMES[t], "sector": r["sector"],
+            "universe": TIER.get(t, "fallen"), "financial": bool(r["financial"]),
             "eligible": bool(r["eligible"]), "reason": reason, "verdict": verdict(r),
             "score": num(r["score"], 1), "quality": num(r["quality"], 0), "value": num(r["value"], 0),
             "timing": num(r["timing"], 0), "flags": list(r["flags"]), "n_flags": int(r["n_flags"]),
@@ -233,7 +242,9 @@ def main():
         "not_scored": not_scored, "missing": missing,
         "counts": {"scanned": len(stocks), "eligible": sum(s["eligible"] for s in stocks),
                    "top100": sum(s["universe"] == "top100" for s in stocks),
-                   "fallen": sum(s["universe"] == "fallen" for s in stocks)},
+                   "fallen": sum(s["universe"] == "fallen" for s in stocks),
+                   "mid": sum(s["universe"] == "mid" for s in stocks),
+                   "small": sum(s["universe"] == "small" for s in stocks)},
     }
     js = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")
     html = TEMPLATE.read_text().replace("__DATA__", js)

@@ -57,4 +57,10 @@ SECTORS = {
     **{t: "Energy & materials" for t in ["XOM", "CVX", "COP", "LIN", "SLB", "HAL", "FCX", "MOS", "APA", "DVN", "OXY"]},
     **{t: "Utilities & real estate" for t in ["NEE", "PLD", "PCG", "EXC", "D", "DUK"]},
 }
+try:                                   # mid- and small-cap lists, if present
+    from .universe_extra import EXTRA_SECTORS
+    for _t, _s in EXTRA_SECTORS.items():
+        SECTORS.setdefault(_t, _s)
+except Exception:                      # the lists are optional
+    pass
 FINANCIAL = {t for t, s in SECTORS.items() if s == "Financials"}
